@@ -44,5 +44,9 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"
 
+# Add app/ to PYTHONPATH so `from vector_store import ...` and `from aws import ...`
+# resolve correctly when uvicorn imports app.main as a package
+ENV PYTHONPATH="/app/app"
+
 # Run from /app so relative paths (runbooks/, incidents/, docs/) resolve correctly
 CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "1"]
