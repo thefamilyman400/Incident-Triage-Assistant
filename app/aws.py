@@ -109,25 +109,30 @@ def s3_load_documents() -> Optional[List[dict]]:
     s3 = boto3.client("s3", region_name=region)
 
     docs = []
-    for prefix in DOCS_PREFIXES:
-        paginator = s3.get_paginator("list_objects_v2")
-        for page in paginator.paginate(Bucket=bucket, Prefix=f"{prefix}/"):
-            for obj in page.get("Contents", []):
-                key = obj["Key"]
-                if not key.endswith((".md", ".txt")):
-                    continue
-                try:
-                    body = s3.get_object(Bucket=bucket, Key=key)["Body"].read().decode("utf-8")
-                    docs.append({
-                        "source": key,          # e.g. "runbooks/HIGH_CPU.md"
-                        "content": body,
-                        "folder": prefix,
-                    })
-                    log.debug("Loaded s3://%s/%s", bucket, key)
-                except Exception as e:
-                    log.warning("Skipping s3://%s/%s — %s", bucket, key, e)
+    try:
+        for prefix in DOCS_PREFIXES:
+            paginator = s3.get_paginator("list_objects_v2")
+            for page in paginator.paginate(Bucket=bucket, Prefix=f"{prefix}/"):
+                for obj in page.get("Contents", []):
+                    key = obj["Key"]
+                    if not key.endswith((".md", ".txt")):
+                        continue
+                    try:
+                        body = s3.get_object(Bucket=bucket, Key=key)["Body"].read().decode("utf-8")
+                        docs.append({
+                            "source": key,
+                            "content": body,
+                            "folder": prefix,
+                        })
+                        log.debug("Loaded s3://%s/%s", bucket, key)
+                    except Exception as e:
+                        log.warning("Skipping s3://%s/%s — %s", bucket, key, e)
+    except Exception as e:
+        print(f"[AWS] WARNING: S3 document load failed — {e}")
+        print(f"[AWS] Falling back to local disk documents.")
+        return None
 
-    log.info("Loaded %d documents from s3://%s", len(docs), bucket)
+    print(f"[AWS] Loaded {len(docs)} documents from s3://{bucket}")
     return docs
 
 
