@@ -1,0 +1,535 @@
+{
+  "@context": {
+    "@vocab":  "https://ibm.com/consulting-advantage/context-studio/schema#",
+    "ica":     "https://ibm.com/consulting-advantage/context-studio/schema#",
+    "xsd":     "http://www.w3.org/2001/XMLSchema#",
+    "schema":  "https://schema.org/",
+
+    "TRIGGERED_BY":  { "@id": "ica:TRIGGERED_BY",  "@type": "@id" },
+    "RESOLVED_BY":   { "@id": "ica:RESOLVED_BY",   "@type": "@id" },
+    "GUIDED_BY":     { "@id": "ica:GUIDED_BY",     "@type": "@id" },
+    "ESCALATES_TO":  { "@id": "ica:ESCALATES_TO",  "@type": "@id" },
+    "GOVERNED_BY":   { "@id": "ica:GOVERNED_BY",   "@type": "@id" },
+    "AFFECTS":       { "@id": "ica:AFFECTS",        "@type": "@id" },
+    "SIMILAR_TO":    { "@id": "ica:SIMILAR_TO",     "@type": "@id" },
+    "TRIAGES":       { "@id": "ica:TRIAGES",        "@type": "@id" },
+    "COVERS_SYSTEM": { "@id": "ica:COVERS_SYSTEM",  "@type": "@id" },
+    "RESOLVES":      { "@id": "ica:RESOLVES",        "@type": "@id" }
+  },
+
+  "@graph": [
+
+    {
+      "@comment": "======================================================",
+      "@comment": "NODE TYPE: Incident (5 instances)",
+      "@comment": "======================================================"
+    },
+
+    {
+      "@id":          "ica:instance/INC-2847",
+      "@type":        "ica:Incident",
+      "ica:nodeType": "Incident",
+      "ica:incident_id":       "INC-2847",
+      "ica:title":             "Production DB CPU Spike — Runaway Batch Job",
+      "ica:severity":          "P2",
+      "ica:status":            "resolved",
+      "ica:source_file":       "INC-2847-HIGH-CPU-BATCH-JOB.md",
+      "ica:on_call_engineer":  "Sarah Mitchell",
+      "ica:incident_commander":"David Okafor",
+      "ica:duration_minutes":  35,
+      "ica:created_at":        "2025-06-10T02:14:00Z",
+      "ica:resolved_at":       "2025-06-10T02:49:00Z",
+      "ica:affected_services": ["prod-db-01","Order Management API","Reporting Service"],
+      "ica:tags":              ["cpu","batch-job","database","postgres"],
+      "TRIGGERED_BY":  { "@id": "ica:instance/alert/HighCPUUsage" },
+      "RESOLVED_BY":   { "@id": "ica:instance/RES-2847" },
+      "GUIDED_BY":     { "@id": "ica:instance/runbook/HIGH_CPU_RUNBOOK" },
+      "ESCALATES_TO":  { "@id": "ica:instance/escalation/P2-path" },
+      "AFFECTS":       [
+        { "@id": "ica:instance/system/prod-db-01" },
+        { "@id": "ica:instance/system/Order-Management-API" },
+        { "@id": "ica:instance/system/Reporting-Service" }
+      ],
+      "SIMILAR_TO":    { "@id": "ica:instance/INC-3012" }
+    },
+
+    {
+      "@id":          "ica:instance/INC-3012",
+      "@type":        "ica:Incident",
+      "ica:nodeType": "Incident",
+      "ica:incident_id":       "INC-3012",
+      "ica:title":             "CPU Spike — Missing DB Index After Deploy",
+      "ica:severity":          "P1",
+      "ica:status":            "resolved",
+      "ica:source_file":       "INC-3012-CPU-MISSING-INDEX.md",
+      "ica:on_call_engineer":  "James Okafor",
+      "ica:incident_commander":"David Okafor",
+      "ica:duration_minutes":  52,
+      "ica:created_at":        "2025-04-22T14:05:00Z",
+      "ica:resolved_at":       "2025-04-22T14:57:00Z",
+      "ica:affected_services": ["prod-db-02","Order Management API"],
+      "ica:tags":              ["cpu","missing-index","database","deploy"],
+      "TRIGGERED_BY":  { "@id": "ica:instance/alert/CriticalCPUUsage" },
+      "RESOLVED_BY":   { "@id": "ica:instance/RES-3012" },
+      "GUIDED_BY":     { "@id": "ica:instance/runbook/HIGH_CPU_RUNBOOK" },
+      "ESCALATES_TO":  { "@id": "ica:instance/escalation/P1-path" },
+      "AFFECTS":       [
+        { "@id": "ica:instance/system/prod-db-02" },
+        { "@id": "ica:instance/system/Order-Management-API" }
+      ],
+      "SIMILAR_TO":    { "@id": "ica:instance/INC-2847" }
+    },
+
+    {
+      "@id":          "ica:instance/INC-3301",
+      "@type":        "ica:Incident",
+      "ica:nodeType": "Incident",
+      "ica:incident_id":       "INC-3301",
+      "ica:title":             "Connection Pool Exhaustion — 503 Errors",
+      "ica:severity":          "P2",
+      "ica:status":            "resolved",
+      "ica:source_file":       "INC-3301-CONNECTION-POOL-EXHAUSTION.md",
+      "ica:on_call_engineer":  "Priya Nair",
+      "ica:duration_minutes":  28,
+      "ica:created_at":        "2025-05-14T09:33:00Z",
+      "ica:resolved_at":       "2025-05-14T10:01:00Z",
+      "ica:affected_services": ["Order Management API","prod-app-01"],
+      "ica:tags":              ["connection-pool","503","java","hikaricp"],
+      "TRIGGERED_BY":  { "@id": "ica:instance/alert/DBConnectionPoolExhausted" },
+      "RESOLVED_BY":   { "@id": "ica:instance/RES-3301" },
+      "GUIDED_BY":     { "@id": "ica:instance/runbook/SERVICE_DOWN_RUNBOOK" },
+      "ESCALATES_TO":  { "@id": "ica:instance/escalation/P2-path" },
+      "AFFECTS":       [
+        { "@id": "ica:instance/system/Order-Management-API" },
+        { "@id": "ica:instance/system/prod-app-01" }
+      ],
+      "SIMILAR_TO":    { "@id": "ica:instance/INC-3601" }
+    },
+
+    {
+      "@id":          "ica:instance/INC-3455",
+      "@type":        "ica:Incident",
+      "ica:nodeType": "Incident",
+      "ica:incident_id":       "INC-3455",
+      "ica:title":             "Disk Full — Log Rotation Misconfiguration",
+      "ica:severity":          "P3",
+      "ica:status":            "resolved",
+      "ica:source_file":       "INC-3455-DISK-FULL-LOGS.md",
+      "ica:on_call_engineer":  "Carlos Rivera",
+      "ica:duration_minutes":  20,
+      "ica:created_at":        "2025-06-01T11:10:00Z",
+      "ica:resolved_at":       "2025-06-01T11:30:00Z",
+      "ica:affected_services": ["prod-app-03"],
+      "ica:tags":              ["disk","logs","logrotate","os-upgrade"],
+      "TRIGGERED_BY":  { "@id": "ica:instance/alert/DiskSpaceCritical" },
+      "RESOLVED_BY":   { "@id": "ica:instance/RES-3455" },
+      "GUIDED_BY":     { "@id": "ica:instance/runbook/DISK_SPACE_RUNBOOK" },
+      "ESCALATES_TO":  { "@id": "ica:instance/escalation/P3-path" },
+      "AFFECTS":       [
+        { "@id": "ica:instance/system/prod-app-03" }
+      ]
+    },
+
+    {
+      "@id":          "ica:instance/INC-3601",
+      "@type":        "ica:Incident",
+      "ica:nodeType": "Incident",
+      "ica:incident_id":       "INC-3601",
+      "ica:title":             "Payment Service Down — Bad Deployment Env Var",
+      "ica:severity":          "P1",
+      "ica:status":            "resolved",
+      "ica:source_file":       "INC-3601-SERVICE-DOWN-BAD-DEPLOY.md",
+      "ica:on_call_engineer":  "Yuki Tanaka",
+      "ica:incident_commander":"Priya Anand",
+      "ica:duration_minutes":  12,
+      "ica:created_at":        "2025-07-22T16:03:00Z",
+      "ica:resolved_at":       "2025-07-22T16:15:00Z",
+      "ica:affected_services": ["Payment Service","Checkout Flow","Order Confirmation Service"],
+      "ica:tags":              ["payment","deploy","helm","kubernetes","env-var"],
+      "TRIGGERED_BY":  { "@id": "ica:instance/alert/ServiceHealthCheckFail" },
+      "RESOLVED_BY":   { "@id": "ica:instance/RES-3601" },
+      "GUIDED_BY":     { "@id": "ica:instance/runbook/SERVICE_DOWN_RUNBOOK" },
+      "ESCALATES_TO":  { "@id": "ica:instance/escalation/P1-path" },
+      "AFFECTS":       [
+        { "@id": "ica:instance/system/Payment-Service" },
+        { "@id": "ica:instance/system/Checkout-Flow" },
+        { "@id": "ica:instance/system/Order-Confirmation-Service" }
+      ],
+      "SIMILAR_TO":    { "@id": "ica:instance/INC-3301" }
+    },
+
+    {
+      "@comment": "======================================================",
+      "@comment": "NODE TYPE: Resolution (5 instances)",
+      "@comment": "======================================================"
+    },
+
+    {
+      "@id":          "ica:instance/RES-2847",
+      "@type":        "ica:Resolution",
+      "ica:nodeType": "Resolution",
+      "ica:resolution_id":   "RES-2847",
+      "ica:incident_id":     "INC-2847",
+      "ica:root_cause":      "Nightly batch job archive_orders_v2.sh executed a full-table-scan query against a 400M-row orders table with no query timeout configured.",
+      "ica:resolution_steps":["Identified runaway process via SHOW PROCESSLIST","Terminated long-running query with KILL <pid>","Added SET SESSION max_statement_time=300 to batch script","Rescheduled cron from 01:30 UTC to 04:00 UTC"],
+      "ica:action_items":    ["PLAT-4401: Add timeout to all batch scripts","DB-892: Index on orders.archived_at","PLAT-4402: Reschedule archival cron","OBS-210: Alert for queries > 10 min"],
+      "ica:lessons_learned": "All DB batch jobs must declare a query timeout before reaching production.",
+      "ica:resolved_by":     "Sarah Mitchell",
+      "ica:resolved_at":     "2025-06-10T02:49:00Z",
+      "ica:duration_minutes":35,
+      "ica:prevention_measures":["CI lint rule for batch scripts without timeout","PagerDuty alert for queries running > 10 minutes"],
+      "RESOLVES": { "@id": "ica:instance/INC-2847" }
+    },
+
+    {
+      "@id":          "ica:instance/RES-3012",
+      "@type":        "ica:Resolution",
+      "ica:nodeType": "Resolution",
+      "ica:resolution_id":   "RES-3012",
+      "ica:incident_id":     "INC-3012",
+      "ica:root_cause":      "New feature deployment introduced a DB query on orders table without a composite index, causing full table scans under load.",
+      "ica:resolution_steps":["Identified full table scan in slow query log","Added composite index on orders(user_id, created_at)","Deployed hotfix to production","Confirmed CPU normalised on monitoring"],
+      "ica:action_items":    ["DB-901: Enforce EXPLAIN check in PR review","CICD-290: Add DB migration validator to pipeline"],
+      "ica:lessons_learned": "All DB migrations must be validated with EXPLAIN ANALYZE before deployment.",
+      "ica:resolved_by":     "James Okafor",
+      "ica:resolved_at":     "2025-04-22T14:57:00Z",
+      "ica:duration_minutes":52,
+      "ica:prevention_measures":["Required EXPLAIN ANALYZE in PR template","Slow query threshold alert added"],
+      "RESOLVES": { "@id": "ica:instance/INC-3012" }
+    },
+
+    {
+      "@id":          "ica:instance/RES-3301",
+      "@type":        "ica:Resolution",
+      "ica:nodeType": "Resolution",
+      "ica:resolution_id":   "RES-3301",
+      "ica:incident_id":     "INC-3301",
+      "ica:root_cause":      "Connection leak introduced in exception handler — connection.close() missing in catch block, exhausting HikariCP pool.",
+      "ica:resolution_steps":["Identified pool exhaustion from HikariCP metrics","Rolled back deployment to previous version","Fixed connection.close() in catch block","Redeployed with fix"],
+      "ica:action_items":    ["PLAT-4410: Add connection leak detection to code review checklist","OBS-215: Alert on HikariCP pool > 80%"],
+      "ica:lessons_learned": "All DB connection handling must use try-with-resources to guarantee close.",
+      "ica:resolved_by":     "Priya Nair",
+      "ica:resolved_at":     "2025-05-14T10:01:00Z",
+      "ica:duration_minutes":28,
+      "ica:prevention_measures":["Static analysis rule for unclosed connections","HikariCP leak detection enabled in staging"],
+      "RESOLVES": { "@id": "ica:instance/INC-3301" }
+    },
+
+    {
+      "@id":          "ica:instance/RES-3455",
+      "@type":        "ica:Resolution",
+      "ica:nodeType": "Resolution",
+      "ica:resolution_id":   "RES-3455",
+      "ica:incident_id":     "INC-3455",
+      "ica:root_cause":      "OS upgrade silently removed logrotate drop-in config for application logs, causing 7 days of unrotated logs to accumulate.",
+      "ica:resolution_steps":["Identified large log files with du -sh /var/log/*","Manually rotated logs with logrotate -f","Freed 47 GB disk space","Restored logrotate config from source control","Verified service recovery"],
+      "ica:action_items":    ["INFRA-5901: Add logrotate config to OS upgrade checklist","OBS-220: Alert if logrotate has not run in 24 hours"],
+      "ica:lessons_learned": "OS upgrade procedures must include a post-upgrade logrotate validation step.",
+      "ica:resolved_by":     "Carlos Rivera",
+      "ica:resolved_at":     "2025-06-01T11:30:00Z",
+      "ica:duration_minutes":20,
+      "ica:prevention_measures":["Post-upgrade checklist includes logrotate verification","Daily logrotate success alert added"],
+      "RESOLVES": { "@id": "ica:instance/INC-3455" }
+    },
+
+    {
+      "@id":          "ica:instance/RES-3601",
+      "@type":        "ica:Resolution",
+      "ica:nodeType": "Resolution",
+      "ica:resolution_id":   "RES-3601",
+      "ica:incident_id":     "INC-3601",
+      "ica:root_cause":      "Misconfigured PAYMENT_GATEWAY_URL in Helm values.yaml pointed to staging gateway instead of production, inherited during chart refactor.",
+      "ica:resolution_steps":["Identified crash from pod logs: invalid PAYMENT_GATEWAY_URL","Confirmed staging URL in values.yaml diff","Ran kubectl rollout undo deployment/payment-service","Verified recovery on pod logs and Stripe dashboard","Deployed v4.2.1 hotfix with corrected config"],
+      "ica:action_items":    ["INFRA-6101: Separate env-specific values into values-<env>.yaml","CICD-330: CI validation for required prod env vars","PAY-1142: Startup probe for payment gateway connectivity","CICD-331: Auto-diff check for staging URLs in prod manifests"],
+      "ica:lessons_learned": "Production Helm values must never inherit from a shared base that includes environment-specific URLs.",
+      "ica:resolved_by":     "Yuki Tanaka",
+      "ica:resolved_at":     "2025-07-22T16:15:00Z",
+      "ica:duration_minutes":12,
+      "ica:prevention_measures":["CI step validates all production env vars","Automated diff check for staging URLs in production manifests"],
+      "RESOLVES": { "@id": "ica:instance/INC-3601" }
+    },
+
+    {
+      "@comment": "======================================================",
+      "@comment": "NODE TYPE: KnowledgeArticle — Runbooks (4 instances)",
+      "@comment": "======================================================"
+    },
+
+    {
+      "@id":          "ica:instance/runbook/HIGH_CPU_RUNBOOK",
+      "@type":        "ica:KnowledgeArticle",
+      "ica:nodeType": "KnowledgeArticle",
+      "ica:title":             "HIGH_CPU_RUNBOOK",
+      "ica:article_type":      "runbook",
+      "ica:source_file":       "HIGH_CPU_RUNBOOK.md",
+      "ica:owning_team":       "Platform Operations",
+      "ica:severity_coverage": ["P1","P2"],
+      "ica:version":           "3.1",
+      "ica:tags":              ["cpu","database","performance","production"],
+      "ica:updated_at":        "2024-11-14T00:00:00Z",
+      "TRIAGES":       [
+        { "@id": "ica:instance/alert/HighCPUUsage" },
+        { "@id": "ica:instance/alert/CriticalCPUUsage" }
+      ],
+      "GOVERNED_BY":   { "@id": "ica:instance/escalation/P2-path" },
+      "COVERS_SYSTEM": [
+        { "@id": "ica:instance/system/prod-db-01" },
+        { "@id": "ica:instance/system/prod-db-02" }
+      ]
+    },
+
+    {
+      "@id":          "ica:instance/runbook/DISK_SPACE_RUNBOOK",
+      "@type":        "ica:KnowledgeArticle",
+      "ica:nodeType": "KnowledgeArticle",
+      "ica:title":             "DISK_SPACE_RUNBOOK",
+      "ica:article_type":      "runbook",
+      "ica:source_file":       "DISK_SPACE_RUNBOOK.md",
+      "ica:owning_team":       "Infra SRE",
+      "ica:severity_coverage": ["P1","P2","P3"],
+      "ica:tags":              ["disk","logs","storage"],
+      "ica:updated_at":        "2024-10-01T00:00:00Z",
+      "TRIAGES":       [
+        { "@id": "ica:instance/alert/DiskSpaceCritical" }
+      ],
+      "GOVERNED_BY":   { "@id": "ica:instance/escalation/P2-path" },
+      "COVERS_SYSTEM": [
+        { "@id": "ica:instance/system/prod-app-03" }
+      ]
+    },
+
+    {
+      "@id":          "ica:instance/runbook/SERVICE_DOWN_RUNBOOK",
+      "@type":        "ica:KnowledgeArticle",
+      "ica:nodeType": "KnowledgeArticle",
+      "ica:title":             "SERVICE_DOWN_RUNBOOK",
+      "ica:article_type":      "runbook",
+      "ica:source_file":       "SERVICE_DOWN_RUNBOOK.md",
+      "ica:owning_team":       "App SRE",
+      "ica:severity_coverage": ["P1","P2"],
+      "ica:tags":              ["service","health","deploy","kubernetes"],
+      "ica:updated_at":        "2024-11-01T00:00:00Z",
+      "TRIAGES":       [
+        { "@id": "ica:instance/alert/ServiceHealthCheckFail" },
+        { "@id": "ica:instance/alert/K8sPodCrashLooping" },
+        { "@id": "ica:instance/alert/DBConnectionPoolExhausted" }
+      ],
+      "GOVERNED_BY":   { "@id": "ica:instance/escalation/P1-path" },
+      "COVERS_SYSTEM": [
+        { "@id": "ica:instance/system/Payment-Service" },
+        { "@id": "ica:instance/system/Order-Management-API" }
+      ]
+    },
+
+    {
+      "@id":          "ica:instance/runbook/NETWORK_LATENCY_RUNBOOK",
+      "@type":        "ica:KnowledgeArticle",
+      "ica:nodeType": "KnowledgeArticle",
+      "ica:title":             "NETWORK_LATENCY_RUNBOOK",
+      "ica:article_type":      "runbook",
+      "ica:source_file":       "NETWORK_LATENCY_RUNBOOK.md",
+      "ica:owning_team":       "Network Ops",
+      "ica:severity_coverage": ["P2","P3"],
+      "ica:tags":              ["network","latency","packet-loss"],
+      "ica:updated_at":        "2024-09-01T00:00:00Z",
+      "TRIAGES":       [
+        { "@id": "ica:instance/alert/NetworkLatencyHigh" }
+      ],
+      "GOVERNED_BY":   { "@id": "ica:instance/escalation/P2-path" }
+    },
+
+    {
+      "@comment": "======================================================",
+      "@comment": "NODE TYPE: KnowledgeArticle — Alerts (6 instances)",
+      "@comment": "======================================================"
+    },
+
+    {
+      "@id":          "ica:instance/alert/HighCPUUsage",
+      "@type":        "ica:KnowledgeArticle",
+      "ica:nodeType": "KnowledgeArticle",
+      "ica:title":             "HighCPUUsage",
+      "ica:article_type":      "alert",
+      "ica:source_file":       "ALERT_DEFINITIONS.md",
+      "ica:owning_team":       "Infra SRE",
+      "ica:severity_coverage": ["P2"],
+      "ica:tags":              ["cpu","prometheus"],
+      "ica:condition":         "CPU > 85% for 5 min on any production host"
+    },
+
+    {
+      "@id":          "ica:instance/alert/CriticalCPUUsage",
+      "@type":        "ica:KnowledgeArticle",
+      "ica:nodeType": "KnowledgeArticle",
+      "ica:title":             "CriticalCPUUsage",
+      "ica:article_type":      "alert",
+      "ica:source_file":       "ALERT_DEFINITIONS.md",
+      "ica:owning_team":       "Infra SRE",
+      "ica:severity_coverage": ["P1"],
+      "ica:tags":              ["cpu","prometheus"],
+      "ica:condition":         "CPU > 95% for 2 min on any production host"
+    },
+
+    {
+      "@id":          "ica:instance/alert/DiskSpaceCritical",
+      "@type":        "ica:KnowledgeArticle",
+      "ica:nodeType": "KnowledgeArticle",
+      "ica:title":             "DiskSpaceCritical",
+      "ica:article_type":      "alert",
+      "ica:source_file":       "ALERT_DEFINITIONS.md",
+      "ica:owning_team":       "Infra SRE",
+      "ica:severity_coverage": ["P1"],
+      "ica:tags":              ["disk","storage"],
+      "ica:condition":         "Disk usage > 90% on any volume"
+    },
+
+    {
+      "@id":          "ica:instance/alert/ServiceHealthCheckFail",
+      "@type":        "ica:KnowledgeArticle",
+      "ica:nodeType": "KnowledgeArticle",
+      "ica:title":             "ServiceHealthCheckFail",
+      "ica:article_type":      "alert",
+      "ica:source_file":       "ALERT_DEFINITIONS.md",
+      "ica:owning_team":       "App SRE",
+      "ica:severity_coverage": ["P1"],
+      "ica:tags":              ["health","service"],
+      "ica:condition":         "Health endpoint returns non-2xx for 3 consecutive checks"
+    },
+
+    {
+      "@id":          "ica:instance/alert/DBConnectionPoolExhausted",
+      "@type":        "ica:KnowledgeArticle",
+      "ica:nodeType": "KnowledgeArticle",
+      "ica:title":             "DBConnectionPoolExhausted",
+      "ica:article_type":      "alert",
+      "ica:source_file":       "ALERT_DEFINITIONS.md",
+      "ica:owning_team":       "Database Ops",
+      "ica:severity_coverage": ["P1"],
+      "ica:tags":              ["database","connection-pool"],
+      "ica:condition":         "Active DB connections > 90% of pool max for 3 min"
+    },
+
+    {
+      "@id":          "ica:instance/alert/K8sPodCrashLooping",
+      "@type":        "ica:KnowledgeArticle",
+      "ica:nodeType": "KnowledgeArticle",
+      "ica:title":             "K8sPodCrashLooping",
+      "ica:article_type":      "alert",
+      "ica:source_file":       "ALERT_DEFINITIONS.md",
+      "ica:owning_team":       "Platform SRE",
+      "ica:severity_coverage": ["P1"],
+      "ica:tags":              ["kubernetes","pod","crashloop"],
+      "ica:condition":         "Pod in CrashLoopBackOff state for > 5 min"
+    },
+
+    {
+      "@id":          "ica:instance/alert/NetworkLatencyHigh",
+      "@type":        "ica:KnowledgeArticle",
+      "ica:nodeType": "KnowledgeArticle",
+      "ica:title":             "NetworkLatencyHigh",
+      "ica:article_type":      "alert",
+      "ica:source_file":       "ALERT_DEFINITIONS.md",
+      "ica:owning_team":       "Network Ops",
+      "ica:severity_coverage": ["P2"],
+      "ica:tags":              ["network","latency"],
+      "ica:condition":         "P99 latency > 500ms for 5 consecutive minutes"
+    },
+
+    {
+      "@comment": "======================================================",
+      "@comment": "NODE TYPE: System (9 instances)",
+      "@comment": "======================================================"
+    },
+
+    { "@id": "ica:instance/system/prod-db-01",                "@type": "ica:System", "ica:nodeType": "System", "ica:system_id": "prod-db-01",                "ica:display_name": "Primary Production Database",      "ica:system_type": "database",    "ica:environment": "production", "ica:owning_team": "Database Ops",    "ica:pagerduty_service": "db-oncall",    "ica:slack_channel": "#db-alerts",       "ica:tags": ["postgres","primary","orders"] },
+    { "@id": "ica:instance/system/prod-db-02",                "@type": "ica:System", "ica:nodeType": "System", "ica:system_id": "prod-db-02",                "ica:display_name": "Secondary Production Database",    "ica:system_type": "database",    "ica:environment": "production", "ica:owning_team": "Database Ops",    "ica:pagerduty_service": "db-oncall",    "ica:slack_channel": "#db-alerts",       "ica:tags": ["postgres","secondary"] },
+    { "@id": "ica:instance/system/prod-app-01",               "@type": "ica:System", "ica:nodeType": "System", "ica:system_id": "prod-app-01",               "ica:display_name": "Production App Server 01",         "ica:system_type": "application", "ica:environment": "production", "ica:owning_team": "App SRE",         "ica:pagerduty_service": "infra-oncall", "ica:slack_channel": "#infra-alerts",    "ica:tags": ["app","api"] },
+    { "@id": "ica:instance/system/prod-app-03",               "@type": "ica:System", "ica:nodeType": "System", "ica:system_id": "prod-app-03",               "ica:display_name": "Production App Server 03",         "ica:system_type": "application", "ica:environment": "production", "ica:owning_team": "App SRE",         "ica:pagerduty_service": "infra-oncall", "ica:slack_channel": "#infra-alerts",    "ica:tags": ["app","logs"] },
+    { "@id": "ica:instance/system/Order-Management-API",      "@type": "ica:System", "ica:nodeType": "System", "ica:system_id": "Order Management API",      "ica:display_name": "Order Management API",             "ica:system_type": "application", "ica:environment": "production", "ica:owning_team": "Platform SRE",    "ica:pagerduty_service": "infra-oncall", "ica:slack_channel": "#infra-alerts",    "ica:tags": ["orders","api","p99-sla"] },
+    { "@id": "ica:instance/system/Reporting-Service",         "@type": "ica:System", "ica:nodeType": "System", "ica:system_id": "Reporting Service",         "ica:display_name": "Reporting Service",                "ica:system_type": "application", "ica:environment": "production", "ica:owning_team": "App SRE",         "ica:pagerduty_service": "infra-oncall", "ica:slack_channel": "#infra-alerts",    "ica:tags": ["reporting","analytics"] },
+    { "@id": "ica:instance/system/Payment-Service",           "@type": "ica:System", "ica:nodeType": "System", "ica:system_id": "Payment Service",           "ica:display_name": "Payment Service",                  "ica:system_type": "application", "ica:environment": "production", "ica:owning_team": "Platform SRE",    "ica:pagerduty_service": "infra-oncall", "ica:slack_channel": "#incidents-p1",    "ica:tags": ["payments","stripe","critical"] },
+    { "@id": "ica:instance/system/Checkout-Flow",             "@type": "ica:System", "ica:nodeType": "System", "ica:system_id": "Checkout Flow",             "ica:display_name": "Checkout Flow",                    "ica:system_type": "application", "ica:environment": "production", "ica:owning_team": "Platform SRE",    "ica:pagerduty_service": "infra-oncall", "ica:slack_channel": "#incidents-p1",    "ica:tags": ["checkout","payments","critical"] },
+    { "@id": "ica:instance/system/Order-Confirmation-Service","@type": "ica:System", "ica:nodeType": "System", "ica:system_id": "Order Confirmation Service","ica:display_name": "Order Confirmation Service",       "ica:system_type": "application", "ica:environment": "production", "ica:owning_team": "App SRE",         "ica:pagerduty_service": "infra-oncall", "ica:slack_channel": "#infra-alerts",    "ica:tags": ["orders","confirmation"] },
+
+    {
+      "@comment": "======================================================",
+      "@comment": "NODE TYPE: EscalationPath (4 instances)",
+      "@comment": "======================================================"
+    },
+
+    {
+      "@id":          "ica:instance/escalation/P1-path",
+      "@type":        "ica:EscalationPath",
+      "ica:nodeType": "EscalationPath",
+      "ica:path_id":               "P1-path",
+      "ica:severity":              "P1",
+      "ica:initial_response_sla":  "5 minutes",
+      "ica:resolution_target":     "2 hours",
+      "ica:pagerduty_service":     "infra-oncall",
+      "ica:slack_channel":         "#incidents-p1",
+      "ica:bridge_call_required":  true,
+      "ica:steps": [
+        { "ica:at_minutes": 0,   "ica:action": "Primary on-call acknowledges PagerDuty alert",          "ica:owner": "Primary On-Call"    },
+        { "ica:at_minutes": 5,   "ica:action": "Secondary on-call paged if unacknowledged",             "ica:owner": "PagerDuty (auto)"   },
+        { "ica:at_minutes": 10,  "ica:action": "Open bridge call; post in #incidents-p1",               "ica:owner": "Primary On-Call"    },
+        { "ica:at_minutes": 15,  "ica:action": "Notify Escalation Manager via direct page",             "ica:owner": "Primary On-Call"    },
+        { "ica:at_minutes": 30,  "ica:action": "Escalation Manager engages VP Engineering",             "ica:owner": "Escalation Manager" },
+        { "ica:at_minutes": 60,  "ica:action": "Executive stakeholder notification if no ETA",          "ica:owner": "VP Engineering"     },
+        { "ica:at_minutes": 120, "ica:action": "Incident review initiated if still unresolved",         "ica:owner": "Escalation Manager" }
+      ]
+    },
+
+    {
+      "@id":          "ica:instance/escalation/P2-path",
+      "@type":        "ica:EscalationPath",
+      "ica:nodeType": "EscalationPath",
+      "ica:path_id":               "P2-path",
+      "ica:severity":              "P2",
+      "ica:initial_response_sla":  "15 minutes",
+      "ica:resolution_target":     "4 hours",
+      "ica:pagerduty_service":     "infra-oncall",
+      "ica:slack_channel":         "#incidents-p2",
+      "ica:bridge_call_required":  false,
+      "ica:steps": [
+        { "ica:at_minutes": 0,   "ica:action": "Primary on-call acknowledges PagerDuty alert",          "ica:owner": "Primary On-Call"    },
+        { "ica:at_minutes": 15,  "ica:action": "Secondary on-call paged if unacknowledged",             "ica:owner": "PagerDuty (auto)"   },
+        { "ica:at_minutes": 30,  "ica:action": "Post status update in #incidents-p2",                   "ica:owner": "Primary On-Call"    },
+        { "ica:at_minutes": 60,  "ica:action": "Notify Escalation Manager if no resolution path found", "ica:owner": "Primary On-Call"    },
+        { "ica:at_minutes": 120, "ica:action": "Auto-promote to P1 if unresolved",                      "ica:owner": "Escalation Manager" }
+      ]
+    },
+
+    {
+      "@id":          "ica:instance/escalation/P3-path",
+      "@type":        "ica:EscalationPath",
+      "ica:nodeType": "EscalationPath",
+      "ica:path_id":               "P3-path",
+      "ica:severity":              "P3",
+      "ica:initial_response_sla":  "1 hour (business hours)",
+      "ica:resolution_target":     "24 hours",
+      "ica:pagerduty_service":     "infra-oncall",
+      "ica:slack_channel":         "#infra-oncall",
+      "ica:bridge_call_required":  false,
+      "ica:steps": [
+        { "ica:at_minutes": 60, "ica:action": "Acknowledge during business hours; post in #infra-oncall", "ica:owner": "Primary On-Call" }
+      ]
+    },
+
+    {
+      "@id":          "ica:instance/escalation/P4-path",
+      "@type":        "ica:EscalationPath",
+      "ica:nodeType": "EscalationPath",
+      "ica:path_id":               "P4-path",
+      "ica:severity":              "P4",
+      "ica:initial_response_sla":  "1 business day",
+      "ica:resolution_target":     "Next sprint",
+      "ica:pagerduty_service":     "infra-oncall",
+      "ica:slack_channel":         "#infra-oncall",
+      "ica:bridge_call_required":  false,
+      "ica:steps": [
+        { "ica:at_minutes": 480, "ica:action": "Jira ticket created and triaged next business day", "ica:owner": "On-Call Engineer" }
+      ]
+    }
+
+  ]
+}

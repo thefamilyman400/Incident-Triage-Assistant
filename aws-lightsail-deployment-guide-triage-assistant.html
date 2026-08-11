@@ -1,0 +1,282 @@
+
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AWS Lightsail Deployment Guide</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #1f2328;
+    background: #ffffff;
+    padding: 32px 16px 48px;
+  }
+  .page { max-width: 760px; margin: 0 auto; }
+  h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .subtitle { color: #57606a; font-size: 13px; margin-bottom: 28px; }
+  h2 { font-size: 15px; font-weight: 700; margin: 28px 0 10px; border-bottom: 1px solid #e5e7eb; padding-bottom: 5px; }
+  h3 { font-size: 13px; font-weight: 600; margin: 16px 0 6px; color: #1f2328; }
+  p { margin-bottom: 10px; }
+  ul, ol { margin: 6px 0 12px 20px; }
+  li { margin-bottom: 4px; }
+
+  /* Cost badge row */
+  .cost-row { display: flex; gap: 12px; margin-bottom: 28px; flex-wrap: wrap; }
+  .cost-card {
+    flex: 1; min-width: 140px; border: 1px solid #e5e7eb;
+    border-radius: 6px; padding: 14px 16px; background: #f7f8fa;
+  }
+  .cost-card .label { font-size: 11px; color: #57606a; text-transform: uppercase; letter-spacing: .04em; }
+  .cost-card .value { font-size: 20px; font-weight: 700; color: #1f2328; margin: 2px 0; }
+  .cost-card .note  { font-size: 11px; color: #57606a; }
+  .cost-card.highlight { border-color: #3b82d4; background: #f0f6ff; }
+  .cost-card.highlight .value { color: #3b82d4; }
+
+  /* Step blocks */
+  .step {
+    border: 1px solid #e5e7eb; border-radius: 6px;
+    margin-bottom: 14px; overflow: hidden;
+  }
+  .step-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px; background: #f7f8fa;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .step-num {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: #3b82d4; color: #fff;
+    font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .step-title { font-weight: 600; font-size: 13px; }
+  .step-body { padding: 12px 14px; }
+
+  /* Code blocks */
+  pre {
+    background: #1f2328; color: #e6edf3;
+    border-radius: 5px; padding: 12px 14px;
+    font-family: "Consolas", "Menlo", monospace;
+    font-size: 12px; line-height: 1.55;
+    overflow-x: auto; margin: 8px 0;
+    white-space: pre;
+  }
+  code { font-family: "Consolas", "Menlo", monospace; font-size: 12px; }
+  .inline-code {
+    background: #f0f2f4; border: 1px solid #e5e7eb;
+    border-radius: 3px; padding: 1px 5px;
+    font-family: "Consolas", "Menlo", monospace; font-size: 12px;
+  }
+
+  /* Callout boxes */
+  .callout {
+    border-left: 3px solid #3b82d4; background: #f0f6ff;
+    border-radius: 0 5px 5px 0; padding: 10px 14px;
+    margin: 10px 0; font-size: 13px;
+  }
+  .callout.warn  { border-color: #d97706; background: #fffbeb; }
+  .callout.ok    { border-color: #16a34a; background: #f0fdf4; }
+  .callout strong { font-weight: 600; }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; margin: 10px 0 14px; font-size: 13px; }
+  th { background: #f7f8fa; font-weight: 600; text-align: left; padding: 7px 10px; border: 1px solid #e5e7eb; }
+  td { padding: 6px 10px; border: 1px solid #e5e7eb; vertical-align: top; }
+  tr:nth-child(even) td { background: #fafafa; }
+
+  /* Footer */
+  .footer { margin-top: 40px; padding-top: 12px; border-top: 1px solid #e5e7eb; text-align: center; font-size: 11px; color: #57606a; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1>AWS Lightsail Deployment Guide</h1>
+  <p class="subtitle">Infrastructure Incident Triage Assistant — FastAPI + Docker on AWS Lightsail</p>
+
+  <div class="cost-row">
+    <div class="cost-card highlight">
+      <div class="label">Monthly Cost</div>
+      <div class="value">$5 / mo</div>
+      <div class="note">1 GB RAM · 2 vCPU · 40 GB SSD</div>
+    </div>
+    <div class="cost-card">
+      <div class="label">Transfer included</div>
+      <div class="value">2 TB</div>
+      <div class="note">More than enough for this app</div>
+    </div>
+    <div class="cost-card">
+      <div class="label">Static IP</div>
+      <div class="value">Free</div>
+      <div class="note">1 static IP included with instance</div>
+    </div>
+    <div class="cost-card">
+      <div class="label">vs EC2 t3.micro</div>
+      <div class="value">~60% less</div>
+      <div class="note">No hidden EBS / EIP / NAT costs</div>
+    </div>
+  </div>
+
+  <div class="callout ok">
+    <strong>Why Lightsail?</strong> Fixed flat-rate billing. No surprise charges from EBS, Elastic IPs, NAT gateways, or data transfer — all of which inflate a typical EC2 bill to $12–20/month for the same spec.
+  </div>
+
+  
+  <h2>Files Created in Your Project</h2>
+  <table>
+    <tr><th>File</th><th>Purpose</th></tr>
+    <tr><td><span class="inline-code">Dockerfile</span></td><td>Multi-stage build. Bakes the sentence-transformers model in. Exposes port 8080.</td></tr>
+    <tr><td><span class="inline-code">.dockerignore</span></td><td>Excludes .env secrets, __pycache__, vector_store, and dev files from the image.</td></tr>
+    <tr><td><span class="inline-code">docker-compose.yml</span></td><td>One-command local test + production run. Mounts a named volume for the vector store.</td></tr>
+    <tr><td><span class="inline-code">deploy.sh</span></td><td>Bootstrap script for a fresh Lightsail Ubuntu 22.04 instance (installs Docker, systemd service, firewall).</td></tr>
+  </table>
+
+  
+  <h2>Deployment Steps</h2>
+
+  <div class="step">
+    <div class="step-header"><div class="step-num">1</div><div class="step-title">Create a Lightsail instance</div></div>
+    <div class="step-body">
+      <ol>
+        <li>Go to <strong>console.aws.amazon.com/lightsail</strong></li>
+        <li>Click <strong>Create instance</strong></li>
+        <li>Choose: <strong>Linux/Unix</strong> → <strong>OS Only</strong> → <strong>Ubuntu 22.04 LTS</strong></li>
+        <li>Instance plan: <strong>$5/month</strong> (1 GB RAM — required for sentence-transformers)</li>
+        <li>Give it a name e.g. <span class="inline-code">triage-assistant</span></li>
+        <li>Click <strong>Create instance</strong> and wait ~60 seconds</li>
+      </ol>
+      <div class="callout warn">
+        <strong>Do not pick the $3.50 plan</strong> — it only has 512 MB RAM. The sentence-transformers model needs ~600 MB to load.
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-header"><div class="step-num">2</div><div class="step-title">Attach a static IP and open port 8080</div></div>
+    <div class="step-body">
+      <ol>
+        <li>In Lightsail, go to <strong>Networking</strong> tab of your instance</li>
+        <li>Click <strong>Attach static IP</strong> — create a new one (free while attached)</li>
+        <li>In <strong>Firewall</strong>, click <strong>Add rule</strong> → Custom TCP · Port <strong>8080</strong> · Any IPv4</li>
+      </ol>
+      <p>Note your static IP — this is the address your app will be accessible at.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-header"><div class="step-num">3</div><div class="step-title">Upload your project files</div></div>
+    <div class="step-body">
+      <p>From your Windows machine, copy the project to the Lightsail instance. Replace <span class="inline-code">YOUR_IP</span> with the static IP you just assigned:</p>
+      <pre># From your local PowerShell (adjust path if needed)
+scp -r "C:\Users\0025BL744\Desktop\watsonx" ubuntu@YOUR_IP:/opt/triage-assistant
+
+# Or if using the Lightsail SSH key explicitly:
+scp -i "C:\path\to\lightsail-key.pem" -r `
+    "C:\Users\0025BL744\Desktop\watsonx\*" `
+    ubuntu@YOUR_IP:/opt/triage-assistant</pre>
+      <div class="callout">
+        <strong>Tip:</strong> You can also use the Lightsail browser SSH console to <span class="inline-code">git clone</span> directly if your repo is on GitHub. Set <span class="inline-code">REPO_URL</span> before running deploy.sh.
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-header"><div class="step-num">4</div><div class="step-title">Run the bootstrap script</div></div>
+    <div class="step-body">
+      <p>SSH into the instance (use the browser SSH button in Lightsail, or your key):</p>
+      <pre>ssh ubuntu@YOUR_IP
+
+# On the instance:
+cd /opt/triage-assistant
+chmod +x deploy.sh
+sudo ./deploy.sh</pre>
+      <p>This installs Docker, sets up the systemd service, and configures the firewall. It takes ~2 minutes.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-header"><div class="step-num">5</div><div class="step-title">Set your API keys</div></div>
+    <div class="step-body">
+      <pre>sudo nano /opt/triage-assistant/.env</pre>
+      <p>Fill in your values:</p>
+      <pre>GOOGLE_API_KEY=AIzaSy...your_real_key...
+GOOGLE_GEMINI_MODEL=gemini-2.0-flash
+GROQ_API_KEY=gsk_...optional_backup...
+GROQ_MODEL=llama-3.1-8b-instant</pre>
+      <div class="callout warn">
+        <strong>Security note:</strong> The .env file is chmod 600 (owner-read only) and is excluded from the Docker image by .dockerignore. It is only read at container startup via docker compose.
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-header"><div class="step-num">6</div><div class="step-title">Start the application</div></div>
+    <div class="step-body">
+      <pre>cd /opt/triage-assistant
+sudo docker compose up -d --build</pre>
+      <p>First build takes <strong>3–5 minutes</strong> (downloads Python base image + installs packages + bakes sentence-transformers model). Subsequent starts are <strong>under 30 seconds</strong>.</p>
+      <pre># Watch the startup logs
+sudo docker compose logs -f
+
+# Confirm it's healthy
+curl http://localhost:8080/health</pre>
+      <div class="callout ok">
+        Once healthy, the app is live at: <strong>http://YOUR_LIGHTSAIL_IP:8080</strong>
+      </div>
+    </div>
+  </div>
+
+  
+  <h2>Day-2 Operations</h2>
+
+  <h3>Useful commands (run on the Lightsail instance)</h3>
+  <table>
+    <tr><th>Task</th><th>Command</th></tr>
+    <tr><td>View live logs</td><td><span class="inline-code">sudo docker compose logs -f</span></td></tr>
+    <tr><td>Restart app</td><td><span class="inline-code">sudo docker compose restart</span></td></tr>
+    <tr><td>Redeploy after code change</td><td><span class="inline-code">sudo docker compose up -d --build</span></td></tr>
+    <tr><td>Stop app</td><td><span class="inline-code">sudo docker compose down</span></td></tr>
+    <tr><td>Check health</td><td><span class="inline-code">curl http://localhost:8080/health</span></td></tr>
+    <tr><td>View resource usage</td><td><span class="inline-code">docker stats</span></td></tr>
+  </table>
+
+  <h3>Auto-restart on reboot</h3>
+  <p>The <span class="inline-code">deploy.sh</span> script registers a systemd service. If the instance reboots (e.g. after an AWS maintenance event), the app starts automatically — no manual intervention needed.</p>
+
+  <h3>Adding a custom domain (optional, free)</h3>
+  <ol>
+    <li>Point your domain's A record to the Lightsail static IP</li>
+    <li>Install Caddy on the instance as a reverse proxy with automatic HTTPS:<br />
+    <span class="inline-code">sudo apt install -y caddy</span> then configure <span class="inline-code">/etc/caddy/Caddyfile</span> with <span class="inline-code">yourdomain.com { reverse_proxy localhost:8080 }</span></li>
+    <li>Caddy auto-provisions a Let's Encrypt TLS certificate — HTTPS at no extra cost</li>
+  </ol>
+
+  
+  <h2>Architecture on Lightsail</h2>
+  <pre style="font-size:11px">
+Internet ──► Lightsail Static IP :8080
+                 │
+                 ▼
+         Docker container
+         ┌─────────────────────────────┐
+         │  uvicorn (1 worker)          │
+         │  FastAPI app (main.py)       │
+         │  sentence-transformers model │  ← baked into image
+         │  315-chunk vector index      │  ← /app/app/vector_store (volume)
+         └─────────────────────────────┘
+                 │
+                 ├─► Google Gemini API (LLM)
+                 └─► Groq API (fallback LLM)
+  </pre>
+
+  <div class="callout">
+    <strong>Vector store persistence:</strong> The Docker named volume <span class="inline-code">vector_store</span> survives container rebuilds and restarts. The expensive embedding step (30–60s on first run) only happens once.
+  </div>
+
+  <div class="footer">Made with IBM Bob</div>
+</div>
+</body>
+</html>

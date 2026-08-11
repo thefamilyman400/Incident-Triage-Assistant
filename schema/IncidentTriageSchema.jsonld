@@ -1,0 +1,531 @@
+{
+  "@context": {
+    "@vocab": "https://schema.org/",
+    "ica":   "https://ibm.com/consulting-advantage/context-studio/schema#",
+    "shacl": "http://www.w3.org/ns/shacl#",
+    "xsd":   "http://www.w3.org/2001/XMLSchema#",
+
+    "Incident":        "ica:Incident",
+    "Resolution":      "ica:Resolution",
+    "KnowledgeArticle":"ica:KnowledgeArticle",
+    "System":          "ica:System",
+    "EscalationPath":  "ica:EscalationPath",
+
+    "triggeredBy":       { "@id": "ica:triggeredBy",       "@type": "@id" },
+    "resolvedBy":        { "@id": "ica:resolvedBy",        "@type": "@id" },
+    "guidedBy":          { "@id": "ica:guidedBy",          "@type": "@id" },
+    "escalatesTo":       { "@id": "ica:escalatesTo",       "@type": "@id" },
+    "governedBy":        { "@id": "ica:governedBy",        "@type": "@id" },
+    "affectsSystem":     { "@id": "ica:affectsSystem",     "@type": "@id" },
+    "similarTo":         { "@id": "ica:similarTo",         "@type": "@id" },
+    "relatedAlerts":     { "@id": "ica:relatedAlerts",     "@type": "@id" },
+    "ownedByTeam":       { "@id": "ica:ownedByTeam",       "@type": "@id" },
+    "actionItems":       { "@id": "ica:actionItems",       "@type": "@id" },
+    "appliesRule":       { "@id": "ica:appliesRule",       "@type": "@id" }
+  },
+
+  "@id": "https://ibm.com/ica/schemas/IncidentTriageSchema",
+  "@type": "ica:ContextSchema",
+  "schema:name": "IncidentTriageSchema",
+  "schema:description": "IT Operations Support schema covering Incidents, Resolutions, Knowledge Articles, Systems and Escalation Paths — grounded in infrastructure runbooks, post-mortems, escalation policy and alert definitions.",
+  "schema:version": "2.0.0",
+
+  "@graph": [
+
+    {
+      "@id": "ica:entityType/Incident",
+      "@type": "ica:EntityType",
+      "schema:name": "Incident",
+      "schema:description": "A production infrastructure event requiring active triage and resolution. Maps to post-mortem documents (INC-XXXX).",
+      "ica:docTypeValue": "incident",
+      "ica:fields": {
+        "incident_id":        { "type": "xsd:string",   "required": true,  "pattern": "^INC-[0-9]{4,}$",            "example": "INC-2847" },
+        "title":              { "type": "xsd:string",   "required": true,                                             "example": "Production DB CPU Spike (Runaway Batch Job)" },
+        "content":            { "type": "xsd:string",   "required": true,  "minLength": 200, "embeddingField": true,  "example": "Full post-mortem body text" },
+        "severity":           { "type": "xsd:string",   "required": true,  "enum": ["P1","P2","P3","P4"],            "example": "P2" },
+        "status":             { "type": "xsd:string",   "required": true,  "enum": ["open","in-progress","resolved","monitoring"], "example": "resolved" },
+        "source_file":        { "type": "xsd:string",   "required": true,  "pattern": "\\.(md|pdf|txt)$",            "example": "INC-2847-HIGH-CPU-BATCH-JOB.md" },
+        "affected_services":  { "type": "xsd:string[]", "required": true,                                             "example": ["Order Management API","Reporting Service"] },
+        "on_call_engineer":   { "type": "xsd:string",   "required": true,                                             "example": "Sarah Mitchell" },
+        "incident_commander": { "type": "xsd:string",   "required": false,                                            "example": "David Okafor" },
+        "duration_minutes":   { "type": "xsd:integer",  "required": false, "minimum": 0,                             "example": 35 },
+        "created_at":         { "type": "xsd:dateTime", "required": true,                                             "example": "2025-06-10T02:14:00Z" },
+        "resolved_at":        { "type": "xsd:dateTime", "required": false,                                            "example": "2025-06-10T02:49:00Z" },
+        "tags":               { "type": "xsd:string[]", "required": false,                                            "example": ["cpu","batch-job","database","postgres"] }
+      },
+      "ica:relationships": ["ica:rel/incident-triggeredBy-alert","ica:rel/incident-resolvedBy-resolution","ica:rel/incident-guidedBy-runbook","ica:rel/incident-affectsSystem","ica:rel/incident-similarTo-incident","ica:rel/incident-escalatesTo-path"]
+    },
+
+    {
+      "@id": "ica:entityType/Resolution",
+      "@type": "ica:EntityType",
+      "schema:name": "Resolution",
+      "schema:description": "The documented set of steps taken to resolve an incident, including root cause, actions performed, and follow-up items.",
+      "ica:docTypeValue": "resolution",
+      "ica:fields": {
+        "resolution_id":       { "type": "xsd:string",   "required": true,  "pattern": "^RES-[0-9]{4,}$",   "example": "RES-2847" },
+        "incident_id":         { "type": "xsd:string",   "required": true,  "pattern": "^INC-[0-9]{4,}$",   "example": "INC-2847" },
+        "root_cause":          { "type": "xsd:string",   "required": true,  "minLength": 50,                 "example": "Nightly batch job archive_orders_v2.sh ran without query timeout against 400M-row table" },
+        "resolution_steps":    { "type": "xsd:string[]", "required": true,  "minItems": 1,                   "example": ["Killed runaway query via KILL <pid>","Added max_statement_time = 300","Rescheduled cron to 04:00 UTC"] },
+        "action_items":        { "type": "xsd:string[]", "required": false,                                   "example": ["PLAT-4401: Add timeout to all batch scripts","DB-892: Index on orders.archived_at"] },
+        "lessons_learned":     { "type": "xsd:string",   "required": false,                                   "example": "Batch jobs must declare a query timeout before reaching production" },
+        "resolved_by":         { "type": "xsd:string",   "required": true,                                    "example": "Sarah Mitchell" },
+        "resolved_at":         { "type": "xsd:dateTime", "required": true,                                    "example": "2025-06-10T02:49:00Z" },
+        "duration_minutes":    { "type": "xsd:integer",  "required": true,  "minimum": 0,                    "example": 35 },
+        "prevention_measures": { "type": "xsd:string[]", "required": false,                                   "example": ["CI lint rule for batch scripts","Observability alert for queries > 10 min"] }
+      },
+      "ica:relationships": ["ica:rel/resolution-resolves-incident","ica:rel/resolution-guidedBy-runbook"]
+    },
+
+    {
+      "@id": "ica:entityType/KnowledgeArticle",
+      "@type": "ica:EntityType",
+      "schema:name": "KnowledgeArticle",
+      "schema:description": "A structured operational document. Covers runbooks (triage procedures), escalation policies, and alert definitions.",
+      "ica:docTypeValue": "runbook | policy | alert",
+      "ica:fields": {
+        "title":              { "type": "xsd:string",   "required": true,                                              "example": "HIGH_CPU_RUNBOOK" },
+        "content":            { "type": "xsd:string",   "required": true,  "minLength": 200, "embeddingField": true,   "example": "Full runbook body" },
+        "article_type":       { "type": "xsd:string",   "required": true,  "enum": ["runbook","policy","alert"],       "example": "runbook" },
+        "source_file":        { "type": "xsd:string",   "required": true,  "pattern": "\\.(md|pdf|txt)$",             "example": "HIGH_CPU_RUNBOOK.md" },
+        "version":            { "type": "xsd:string",   "required": false,                                             "example": "3.1" },
+        "owning_team":        { "type": "xsd:string",   "required": true,  "enum": ["Infra SRE","App SRE","Database Ops","Network Ops","Platform SRE","Infrastructure Operations","Platform Operations"], "example": "Platform Operations" },
+        "severity_coverage":  { "type": "xsd:string[]", "required": false, "items_enum": ["P1","P2","P3","P4"],        "example": ["P1","P2"] },
+        "diagnostic_commands":{ "type": "xsd:string[]", "required": false,                                             "example": ["ps aux --sort=-%cpu | head -20","SELECT pid FROM pg_stat_activity"] },
+        "escalation_criteria":{ "type": "xsd:string[]", "required": false,                                             "example": ["CPU > 90% for 30 min despite mitigation","Root cause unknown after 20 min"] },
+        "tags":               { "type": "xsd:string[]", "required": false,                                             "example": ["cpu","database","performance","production"] },
+        "created_at":         { "type": "xsd:dateTime", "required": false,                                             "example": "2024-01-15T09:00:00Z" },
+        "updated_at":         { "type": "xsd:dateTime", "required": false,                                             "example": "2024-11-14T00:00:00Z" }
+      },
+      "ica:relationships": ["ica:rel/runbook-triages-alert","ica:rel/runbook-governedBy-policy","ica:rel/runbook-affectsSystem"]
+    },
+
+    {
+      "@id": "ica:entityType/System",
+      "@type": "ica:EntityType",
+      "schema:name": "System",
+      "schema:description": "A named infrastructure service, server, or platform component referenced in incidents, alerts and runbooks.",
+      "ica:docTypeValue": null,
+      "ica:fields": {
+        "system_id":      { "type": "xsd:string",   "required": true,                                                                           "example": "prod-db-01" },
+        "display_name":   { "type": "xsd:string",   "required": true,                                                                           "example": "Order Management API" },
+        "system_type":    { "type": "xsd:string",   "required": true,  "enum": ["database","application","platform","network","queue","other"],  "example": "database" },
+        "environment":    { "type": "xsd:string",   "required": true,  "enum": ["production","staging","development"],                           "example": "production" },
+        "owning_team":    { "type": "xsd:string",   "required": true,                                                                           "example": "Database Ops" },
+        "pagerduty_service":{ "type": "xsd:string", "required": false,                                                                          "example": "db-oncall" },
+        "slack_channel":  { "type": "xsd:string",   "required": false,                                                                          "example": "#db-alerts" },
+        "tags":           { "type": "xsd:string[]", "required": false,                                                                           "example": ["postgres","primary","payments"] }
+      },
+      "ica:knownInstances": [
+        { "system_id": "prod-db-01",                "system_type": "database",    "owning_team": "Database Ops",     "pagerduty_service": "db-oncall",      "slack_channel": "#db-alerts"       },
+        { "system_id": "prod-db-02",                "system_type": "database",    "owning_team": "Database Ops",     "pagerduty_service": "db-oncall",      "slack_channel": "#db-alerts"       },
+        { "system_id": "prod-app-01",               "system_type": "application", "owning_team": "App SRE",          "pagerduty_service": "infra-oncall",   "slack_channel": "#infra-alerts"    },
+        { "system_id": "prod-app-03",               "system_type": "application", "owning_team": "App SRE",          "pagerduty_service": "infra-oncall",   "slack_channel": "#infra-alerts"    },
+        { "system_id": "Order Management API",      "system_type": "application", "owning_team": "Platform SRE",     "pagerduty_service": "infra-oncall",   "slack_channel": "#infra-alerts"    },
+        { "system_id": "Reporting Service",         "system_type": "application", "owning_team": "App SRE",          "pagerduty_service": "infra-oncall",   "slack_channel": "#infra-alerts"    },
+        { "system_id": "Payment Service",           "system_type": "application", "owning_team": "Platform SRE",     "pagerduty_service": "infra-oncall",   "slack_channel": "#incidents-p1"    },
+        { "system_id": "Checkout Flow",             "system_type": "application", "owning_team": "Platform SRE",     "pagerduty_service": "infra-oncall",   "slack_channel": "#incidents-p1"    },
+        { "system_id": "Order Confirmation Service","system_type": "application", "owning_team": "App SRE",          "pagerduty_service": "infra-oncall",   "slack_channel": "#infra-alerts"    }
+      ],
+      "ica:relationships": ["ica:rel/incident-affectsSystem","ica:rel/runbook-affectsSystem","ica:rel/alert-monitorsSystem"]
+    },
+
+    {
+      "@id": "ica:entityType/EscalationPath",
+      "@type": "ica:EntityType",
+      "schema:name": "EscalationPath",
+      "schema:description": "Defines who gets paged, when, and through which channel for a given severity level. Sourced from ESCALATION_POLICY.md.",
+      "ica:docTypeValue": "policy",
+      "ica:fields": {
+        "path_id":               { "type": "xsd:string",   "required": true,  "enum": ["P1-path","P2-path","P3-path","P4-path"],               "example": "P1-path" },
+        "severity":              { "type": "xsd:string",   "required": true,  "enum": ["P1","P2","P3","P4"],                                   "example": "P1" },
+        "initial_response_sla":  { "type": "xsd:string",   "required": true,                                                                   "example": "≤ 5 minutes" },
+        "resolution_target":     { "type": "xsd:string",   "required": true,                                                                   "example": "≤ 2 hours" },
+        "pagerduty_service":     { "type": "xsd:string",   "required": true,                                                                   "example": "infra-oncall" },
+        "slack_channel":         { "type": "xsd:string",   "required": true,                                                                   "example": "#incidents-p1" },
+        "bridge_call_required":  { "type": "xsd:boolean",  "required": true,                                                                   "example": true },
+        "steps": {
+          "type": "ica:EscalationStep[]",
+          "required": true,
+          "minItems": 1,
+          "itemFields": {
+            "at_minutes": { "type": "xsd:integer", "required": true,  "example": 0    },
+            "action":     { "type": "xsd:string",  "required": true,  "example": "Primary on-call acknowledges PagerDuty alert" },
+            "owner":      { "type": "xsd:string",  "required": true,  "example": "Primary On-Call" }
+          }
+        },
+        "on_call_rotation": {
+          "type": "ica:OnCallRotation",
+          "required": false,
+          "fields": {
+            "primary":             { "type": "xsd:string", "example": "Alex Thompson"  },
+            "secondary":           { "type": "xsd:string", "example": "Priya Nair"     },
+            "escalation_manager":  { "type": "xsd:string", "example": "James Okafor"  }
+          }
+        }
+      },
+      "ica:knownInstances": [
+        {
+          "path_id": "P1-path", "severity": "P1",
+          "initial_response_sla": "≤ 5 minutes", "resolution_target": "≤ 2 hours",
+          "pagerduty_service": "infra-oncall",    "slack_channel": "#incidents-p1",
+          "bridge_call_required": true,
+          "steps": [
+            { "at_minutes": 0,   "action": "Primary on-call acknowledges PagerDuty alert",              "owner": "Primary On-Call"     },
+            { "at_minutes": 5,   "action": "Secondary on-call paged if unacknowledged",                 "owner": "PagerDuty (auto)"    },
+            { "at_minutes": 10,  "action": "Open bridge call; post in #incidents-p1",                   "owner": "Primary On-Call"     },
+            { "at_minutes": 15,  "action": "Notify Escalation Manager via direct page",                 "owner": "Primary On-Call"     },
+            { "at_minutes": 30,  "action": "Escalation Manager engages VP Engineering",                 "owner": "Escalation Manager"  },
+            { "at_minutes": 60,  "action": "Executive stakeholder notification if no resolution ETA",   "owner": "VP Engineering"      },
+            { "at_minutes": 120, "action": "Incident review initiated if still unresolved",             "owner": "Escalation Manager"  }
+          ]
+        },
+        {
+          "path_id": "P2-path", "severity": "P2",
+          "initial_response_sla": "≤ 15 minutes", "resolution_target": "≤ 4 hours",
+          "pagerduty_service": "infra-oncall",     "slack_channel": "#incidents-p2",
+          "bridge_call_required": false,
+          "steps": [
+            { "at_minutes": 0,   "action": "Primary on-call acknowledges PagerDuty alert",              "owner": "Primary On-Call"     },
+            { "at_minutes": 15,  "action": "Secondary on-call paged if unacknowledged",                 "owner": "PagerDuty (auto)"    },
+            { "at_minutes": 30,  "action": "Post status update in #incidents-p2",                       "owner": "Primary On-Call"     },
+            { "at_minutes": 60,  "action": "Notify Escalation Manager if no resolution path identified","owner": "Primary On-Call"     },
+            { "at_minutes": 120, "action": "Auto-promote to P1 if unresolved",                          "owner": "Escalation Manager"  }
+          ]
+        },
+        {
+          "path_id": "P3-path", "severity": "P3",
+          "initial_response_sla": "≤ 1 hour (business hours)", "resolution_target": "≤ 24 hours",
+          "pagerduty_service": "infra-oncall", "slack_channel": "#infra-oncall",
+          "bridge_call_required": false,
+          "steps": [
+            { "at_minutes": 60,  "action": "Acknowledge during business hours; post in #infra-oncall",  "owner": "Primary On-Call"     }
+          ]
+        },
+        {
+          "path_id": "P4-path", "severity": "P4",
+          "initial_response_sla": "≤ 1 business day", "resolution_target": "Next sprint",
+          "pagerduty_service": null, "slack_channel": "#infra-oncall",
+          "bridge_call_required": false,
+          "steps": [
+            { "at_minutes": 480, "action": "Jira ticket created and triaged next business day",         "owner": "On-Call Engineer"    }
+          ]
+        }
+      ],
+      "ica:relationships": ["ica:rel/incident-escalatesTo-path","ica:rel/runbook-governedBy-policy"]
+    },
+
+    {
+      "@id": "ica:rel/incident-triggeredBy-alert",
+      "@type": "ica:Relationship",
+      "schema:name": "TRIGGERED_BY",
+      "ica:from": "ica:entityType/Incident",
+      "ica:to":   "ica:entityType/KnowledgeArticle",
+      "ica:toFilter": { "article_type": "alert" },
+      "ica:fieldMapping": "triggeredBy",
+      "ica:cardinality": "many-to-one",
+      "schema:description": "Every incident is triggered by a specific alert firing. Links incident history to the alert definition for pattern matching.",
+      "schema:example": "INC-2847 → HighCPUUsage | INC-3601 → ServiceHealthCheckFail"
+    },
+
+    {
+      "@id": "ica:rel/incident-resolvedBy-resolution",
+      "@type": "ica:Relationship",
+      "schema:name": "RESOLVED_BY",
+      "ica:from": "ica:entityType/Incident",
+      "ica:to":   "ica:entityType/Resolution",
+      "ica:fieldMapping": "resolvedBy",
+      "ica:cardinality": "one-to-one",
+      "schema:description": "Each incident has exactly one resolution record documenting root cause, steps taken and follow-up actions.",
+      "schema:example": "INC-2847 → RES-2847 | INC-3601 → RES-3601"
+    },
+
+    {
+      "@id": "ica:rel/incident-guidedBy-runbook",
+      "@type": "ica:Relationship",
+      "schema:name": "GUIDED_BY",
+      "ica:from": "ica:entityType/Incident",
+      "ica:to":   "ica:entityType/KnowledgeArticle",
+      "ica:toFilter": { "article_type": "runbook" },
+      "ica:fieldMapping": "guidedBy",
+      "ica:cardinality": "many-to-one",
+      "schema:description": "An incident was (or should have been) resolved using a specific runbook. Bob uses this link to surface the runbook when a similar alert pattern fires.",
+      "schema:example": "INC-2847 → HIGH_CPU_RUNBOOK | INC-3601 → SERVICE_DOWN_RUNBOOK"
+    },
+
+    {
+      "@id": "ica:rel/incident-affectsSystem",
+      "@type": "ica:Relationship",
+      "schema:name": "AFFECTS",
+      "ica:from": "ica:entityType/Incident",
+      "ica:to":   "ica:entityType/System",
+      "ica:fieldMapping": "affectsSystem",
+      "ica:cardinality": "many-to-many",
+      "schema:description": "An incident impacts one or more Systems. Used by Bob to scope triage responses to the specific server or service named in the alert.",
+      "schema:example": "INC-2847 → [prod-db-01, Order Management API, Reporting Service]"
+    },
+
+    {
+      "@id": "ica:rel/incident-similarTo-incident",
+      "@type": "ica:Relationship",
+      "schema:name": "SIMILAR_TO",
+      "ica:from": "ica:entityType/Incident",
+      "ica:to":   "ica:entityType/Incident",
+      "ica:fieldMapping": "similarTo",
+      "ica:cardinality": "many-to-many",
+      "schema:description": "Links incidents with the same root cause pattern to allow Bob to surface a cluster of historical examples.",
+      "schema:example": "INC-3012 ↔ INC-2847 (both CPU spikes on prod-db; related root causes)"
+    },
+
+    {
+      "@id": "ica:rel/incident-escalatesTo-path",
+      "@type": "ica:Relationship",
+      "schema:name": "ESCALATES_TO",
+      "ica:from": "ica:entityType/Incident",
+      "ica:to":   "ica:entityType/EscalationPath",
+      "ica:fieldMapping": "escalatesTo",
+      "ica:cardinality": "many-to-one",
+      "schema:description": "Every incident follows the escalation path for its severity level.",
+      "schema:example": "INC-3601 (P1) → P1-path | INC-2847 (P2) → P2-path"
+    },
+
+    {
+      "@id": "ica:rel/runbook-triages-alert",
+      "@type": "ica:Relationship",
+      "schema:name": "TRIAGES",
+      "ica:from": "ica:entityType/KnowledgeArticle",
+      "ica:fromFilter": { "article_type": "runbook" },
+      "ica:to":   "ica:entityType/KnowledgeArticle",
+      "ica:toFilter": { "article_type": "alert" },
+      "ica:fieldMapping": "relatedAlerts",
+      "ica:cardinality": "many-to-many",
+      "schema:description": "A runbook handles one or more alert types.",
+      "schema:example": "HIGH_CPU_RUNBOOK → [HighCPUUsage, CriticalCPUUsage, DB_SLOW_QUERY, POD_RESTART_LOOP]"
+    },
+
+    {
+      "@id": "ica:rel/runbook-governedBy-policy",
+      "@type": "ica:Relationship",
+      "schema:name": "GOVERNED_BY",
+      "ica:from": "ica:entityType/KnowledgeArticle",
+      "ica:fromFilter": { "article_type": "runbook" },
+      "ica:to":   "ica:entityType/EscalationPath",
+      "ica:fieldMapping": "governedBy",
+      "ica:cardinality": "many-to-one",
+      "schema:description": "Every runbook references an escalation path defining when to escalate and to whom.",
+      "schema:example": "HIGH_CPU_RUNBOOK → P2-path (escalate if CPU > 90% for 30+ min)"
+    },
+
+    {
+      "@id": "ica:rel/runbook-affectsSystem",
+      "@type": "ica:Relationship",
+      "schema:name": "COVERS_SYSTEM",
+      "ica:from": "ica:entityType/KnowledgeArticle",
+      "ica:fromFilter": { "article_type": "runbook" },
+      "ica:to":   "ica:entityType/System",
+      "ica:fieldMapping": "affectsSystem",
+      "ica:cardinality": "many-to-many",
+      "schema:description": "A runbook is applicable to one or more specific systems.",
+      "schema:example": "HIGH_CPU_RUNBOOK → [prod-db-01, prod-db-02, prod-app-01]"
+    },
+
+    {
+      "@id": "ica:rel/resolution-resolves-incident",
+      "@type": "ica:Relationship",
+      "schema:name": "RESOLVES",
+      "ica:from": "ica:entityType/Resolution",
+      "ica:to":   "ica:entityType/Incident",
+      "ica:fieldMapping": "incident_id",
+      "ica:cardinality": "one-to-one",
+      "schema:description": "Inverse of RESOLVED_BY. A resolution document closes exactly one incident.",
+      "schema:example": "RES-2847 → INC-2847"
+    },
+
+    {
+      "@id": "ica:rel/alert-monitorsSystem",
+      "@type": "ica:Relationship",
+      "schema:name": "MONITORS",
+      "ica:from": "ica:entityType/KnowledgeArticle",
+      "ica:fromFilter": { "article_type": "alert" },
+      "ica:to":   "ica:entityType/System",
+      "ica:fieldMapping": "affectsSystem",
+      "ica:cardinality": "many-to-many",
+      "schema:description": "An alert definition monitors one or more systems. Owning team is routed via the system's PagerDuty service.",
+      "schema:example": "HighCPUUsage → [prod-db-01, prod-app-01] via Infra SRE / infra-oncall"
+    },
+
+    {
+      "@id": "ica:rule/BR-001",
+      "@type": "ica:BusinessRule",
+      "schema:name": "BR-001 — incident_id format",
+      "ica:appliesTo": "ica:entityType/Incident",
+      "ica:ruleType": "FieldConstraint",
+      "ica:constraint": "incident_id MUST match /^INC-[0-9]{4,}$/",
+      "shacl:pattern": "^INC-[0-9]{4,}$",
+      "ica:errorMessage": "Incident ID must be in format INC-XXXX (e.g. INC-2847).",
+      "schema:example": "INC-2847 ✅  |  INC-AB ❌  |  (missing) ❌"
+    },
+
+    {
+      "@id": "ica:rule/BR-002",
+      "@type": "ica:BusinessRule",
+      "schema:name": "BR-002 — severity is required and enumerated",
+      "ica:appliesTo": ["ica:entityType/Incident","ica:entityType/KnowledgeArticle"],
+      "ica:ruleType": "FieldConstraint",
+      "ica:constraint": "severity MUST be one of [P1, P2, P3, P4] for incidents and alerts",
+      "shacl:in": ["P1","P2","P3","P4"],
+      "ica:errorMessage": "Severity must be P1, P2, P3 or P4.",
+      "schema:example": "P1 ✅  |  'urgent' ❌  |  (missing on P1 incident) ❌"
+    },
+
+    {
+      "@id": "ica:rule/BR-003",
+      "@type": "ica:BusinessRule",
+      "schema:name": "BR-003 — P1 incidents must name affected systems",
+      "ica:appliesTo": "ica:entityType/Incident",
+      "ica:ruleType": "ConditionalConstraint",
+      "ica:condition": "severity == 'P1'",
+      "ica:constraint": "affected_services MUST contain at least one entry",
+      "shacl:minCount": 1,
+      "ica:errorMessage": "P1 incidents must identify at least one affected system (INC-3601 affected Payment Service, Checkout Flow, Order Confirmation Service).",
+      "schema:example": "affected_services: ['Payment Service'] with P1 ✅  |  [] with P1 ❌"
+    },
+
+    {
+      "@id": "ica:rule/BR-004",
+      "@type": "ica:BusinessRule",
+      "schema:name": "BR-004 — P2 incident auto-promotes to P1 after 2 hours",
+      "ica:appliesTo": "ica:entityType/Incident",
+      "ica:ruleType": "TemporalConstraint",
+      "ica:condition": "severity == 'P2' AND status IN ('open','in-progress') AND (now - created_at) >= 120 minutes",
+      "ica:constraint": "severity MUST be promoted to P1 and P1-path escalation triggered",
+      "ica:errorMessage": "P2 incident unresolved after 120 minutes — auto-promote to P1 per ESCALATION_POLICY.",
+      "schema:example": "INC-2847 open for 121 min → severity becomes P1 ✅"
+    },
+
+    {
+      "@id": "ica:rule/BR-005",
+      "@type": "ica:BusinessRule",
+      "schema:name": "BR-005 — Resolution required before incident can close",
+      "ica:appliesTo": "ica:entityType/Incident",
+      "ica:ruleType": "RelationshipConstraint",
+      "ica:condition": "status == 'resolved'",
+      "ica:constraint": "resolvedBy MUST reference a valid Resolution with matching incident_id",
+      "shacl:minCount": 1,
+      "ica:errorMessage": "An incident cannot be marked resolved without a linked Resolution document.",
+      "schema:example": "INC-2847 resolved → RES-2847 must exist ✅  |  resolved with no Resolution ❌"
+    },
+
+    {
+      "@id": "ica:rule/BR-006",
+      "@type": "ica:BusinessRule",
+      "schema:name": "BR-006 — Resolution must include at least one step",
+      "ica:appliesTo": "ica:entityType/Resolution",
+      "ica:ruleType": "FieldConstraint",
+      "ica:constraint": "resolution_steps MUST contain at least 1 item",
+      "shacl:minCount": 1,
+      "ica:errorMessage": "Resolution documents with no steps cannot guide Bob's triage responses.",
+      "schema:example": "['Killed query via KILL <pid>'] ✅  |  [] ❌"
+    },
+
+    {
+      "@id": "ica:rule/BR-007",
+      "@type": "ica:BusinessRule",
+      "schema:name": "BR-007 — Every runbook must link to at least one alert",
+      "ica:appliesTo": "ica:entityType/KnowledgeArticle",
+      "ica:ruleType": "RelationshipConstraint",
+      "ica:condition": "article_type == 'runbook'",
+      "ica:constraint": "relatedAlerts MUST reference at least one KnowledgeArticle with article_type=alert",
+      "shacl:minCount": 1,
+      "ica:errorMessage": "A runbook not linked to an alert cannot be retrieved by alert-triggered queries in Bob.",
+      "schema:example": "HIGH_CPU_RUNBOOK → [HighCPUUsage, CriticalCPUUsage] ✅  |  relatedAlerts: [] ❌"
+    },
+
+    {
+      "@id": "ica:rule/BR-008",
+      "@type": "ica:BusinessRule",
+      "schema:name": "BR-008 — Every runbook must reference an escalation path",
+      "ica:appliesTo": "ica:entityType/KnowledgeArticle",
+      "ica:ruleType": "RelationshipConstraint",
+      "ica:condition": "article_type == 'runbook'",
+      "ica:constraint": "governedBy MUST reference a valid EscalationPath",
+      "shacl:minCount": 1,
+      "ica:errorMessage": "Every runbook must define when to escalate. Link to the appropriate P1/P2/P3-path.",
+      "schema:example": "HIGH_CPU_RUNBOOK → P2-path ✅  |  governedBy: null ❌"
+    },
+
+    {
+      "@id": "ica:rule/BR-009",
+      "@type": "ica:BusinessRule",
+      "schema:name": "BR-009 — Runbook staleness warning after 180 days",
+      "ica:appliesTo": "ica:entityType/KnowledgeArticle",
+      "ica:ruleType": "StalenessConstraint",
+      "ica:condition": "article_type == 'runbook'",
+      "ica:constraint": "updated_at SHOULD be within 180 days of current date. Bob appends a staleness warning on responses citing documents older than 180 days and blocks citations for documents older than 365 days.",
+      "ica:warningThresholdDays": 180,
+      "ica:blockThresholdDays": 365,
+      "ica:errorMessage": "Runbook not reviewed in 6+ months — Bob will warn. Runbook not reviewed in 12+ months — Bob will not cite.",
+      "schema:example": "updated_at: 2024-11-14 (within 180d) ✅  |  updated_at: 2023-01-01 ⛔"
+    },
+
+    {
+      "@id": "ica:rule/BR-010",
+      "@type": "ica:BusinessRule",
+      "schema:name": "BR-010 — content minimum length",
+      "ica:appliesTo": ["ica:entityType/Incident","ica:entityType/Resolution","ica:entityType/KnowledgeArticle"],
+      "ica:ruleType": "FieldConstraint",
+      "ica:constraint": "content length MUST be >= 200 characters",
+      "shacl:minLength": 200,
+      "ica:errorMessage": "Documents shorter than 200 characters produce no meaningful RAG chunks.",
+      "schema:example": "Full runbook body ✅  |  'See Confluence page' ❌"
+    },
+
+    {
+      "@id": "ica:rule/BR-011",
+      "@type": "ica:BusinessRule",
+      "schema:name": "BR-011 — Noisy alert fatigue policy",
+      "ica:appliesTo": "ica:entityType/KnowledgeArticle",
+      "ica:ruleType": "OperationalConstraint",
+      "ica:condition": "article_type == 'alert'",
+      "ica:constraint": "Any alert firing > 10 times per week without actionable outcome MUST be reviewed by Observability Guild within 2 weeks. A Jira ticket tagged 'observability-review' must exist.",
+      "ica:noisyAlerts": ["HighCPUUsage","DiskSpaceWarning","K8sPodRestartHigh","DBConnectionPoolHigh","NetworkLatencyHigh","LogErrorRateHigh"],
+      "ica:errorMessage": "Alert firing too frequently without action — open observability-review ticket.",
+      "schema:example": "HighCPUUsage fires 15×/week with no pages acted on → Jira ticket required ✅"
+    },
+
+    {
+      "@id": "ica:rule/BR-012",
+      "@type": "ica:BusinessRule",
+      "schema:name": "BR-012 — Referential integrity between Incident and Resolution",
+      "ica:appliesTo": "ica:entityType/Resolution",
+      "ica:ruleType": "ReferentialIntegrity",
+      "ica:constraint": "Resolution.incident_id MUST match an existing Incident.incident_id in the same context",
+      "ica:errorMessage": "Resolution references an incident that does not exist in this context.",
+      "schema:example": "RES-2847.incident_id = 'INC-2847' (exists) ✅  |  'INC-9999' (not uploaded) ❌"
+    },
+
+    {
+      "@id": "ica:rule/BR-013",
+      "@type": "ica:BusinessRule",
+      "schema:name": "BR-013 — System environment must be production for P1/P2 incidents",
+      "ica:appliesTo": "ica:entityType/Incident",
+      "ica:ruleType": "ConditionalConstraint",
+      "ica:condition": "severity IN ('P1','P2')",
+      "ica:constraint": "All Systems referenced in affectsSystem MUST have environment == 'production'",
+      "ica:errorMessage": "P1/P2 incidents should only reference production systems. Check environment tag on referenced System.",
+      "schema:example": "INC-3601 → Payment Service (environment: production) ✅  |  → staging-payment-svc ❌"
+    },
+
+    {
+      "@id": "ica:rule/BR-014",
+      "@type": "ica:BusinessRule",
+      "schema:name": "BR-014 — EscalationPath.steps must be ordered by at_minutes",
+      "ica:appliesTo": "ica:entityType/EscalationPath",
+      "ica:ruleType": "OrderingConstraint",
+      "ica:constraint": "steps[i].at_minutes MUST be <= steps[i+1].at_minutes (non-decreasing order)",
+      "ica:errorMessage": "Escalation steps must be listed in chronological order.",
+      "schema:example": "[T+0, T+5, T+15, T+30] ✅  |  [T+30, T+5, T+15] ❌"
+    }
+
+  ]
+}

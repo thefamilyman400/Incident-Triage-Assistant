@@ -1,0 +1,1339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AI Incident Engineer — IBM Bob</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%231e3a5f'/><text x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-size='18' font-family='monospace' font-weight='bold' fill='%233b82f6'>B</text></svg>"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Segoe UI", system-ui, sans-serif; font-size: 14px; background: #0f1117; color: #e2e8f0; min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* ── Header ── */
+  .header { background: #161b27; border-bottom: 1px solid #2d3748; padding: 12px 24px; display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+  .pulse { width: 10px; height: 10px; border-radius: 50%; background: #22c55e; animation: pulse 2s infinite; flex-shrink:0; }
+  .pulse.error { background: #ef4444; }
+  .header h1 { font-size: 15px; font-weight: 700; color: #f1f5f9; }
+  .ibm { font-size: 11px; font-weight: 700; color: #3b82f6; background: #1e3a5f; padding: 2px 8px; border-radius: 3px; }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  #statusLabel { font-size: 12px; color: #64748b; }
+  .header-btn { background: #1e293b; border: 1px solid #334155; color: #94a3b8; border-radius: 6px; padding: 5px 12px; font-size: 12px; cursor: pointer; font-family: inherit; }
+  .header-btn:hover { border-color: #3b82f6; color: #e2e8f0; }
+  .stream-toggle { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #64748b; cursor: pointer; user-select: none; }
+  .stream-toggle input { accent-color: #3b82f6; cursor: pointer; }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.3} }
+
+  /* ── Layout ── */
+  .layout { display: flex; flex: 1; overflow: hidden; height: calc(100vh - 49px); }
+
+  /* ── Sidebar ── */
+  .sidebar { width: 240px; flex-shrink: 0; background: #161b27; border-right: 1px solid #2d3748; overflow: hidden; display: flex; flex-direction: column; }
+  .sidebar-tabs { display: flex; border-bottom: 1px solid #2d3748; flex-shrink: 0; }
+  .stab { flex: 1; padding: 8px 4px; font-size: 11px; font-weight: 600; color: #475569; text-align: center; cursor: pointer; border-bottom: 2px solid transparent; transition: all .15s; background: none; border-top: none; border-left: none; border-right: none; font-family: inherit; }
+  .stab:hover { color: #94a3b8; }
+  .stab.active { color: #3b82f6; border-bottom-color: #3b82f6; }
+  .sidebar-panel { display: none; flex: 1; overflow-y: auto; padding: 14px 12px; flex-direction: column; gap: 16px; }
+  .sidebar-panel.active { display: flex; }
+  .sidebar h3 { font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; }
+  .doc-item { padding: 5px 8px; border-radius: 4px; font-size: 12px; color: #94a3b8; display: flex; align-items: center; gap: 7px; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .dot.rb { background: #3b82f6; } .dot.inc { background: #ef4444; } .dot.pol { background: #8b5cf6; }
+  #docCount { font-size: 11px; color: #475569; padding: 4px 8px; }
+  #indexBadge { font-size: 10px; color: #2da44e; padding: 2px 6px; background: #0d2615; border: 1px solid #166534; border-radius: 3px; display: inline-block; margin-top: 2px; }
+
+  /* ── History panel ── */
+  .hist-empty { font-size: 12px; color: #334155; text-align: center; padding: 20px 8px; line-height: 1.6; }
+  .hist-session { background: #1e293b; border: 1px solid #2d3748; border-radius: 6px; padding: 9px 10px; cursor: pointer; transition: border-color .15s; margin-bottom: 6px; position: relative; }
+  .hist-session:hover { border-color: #3b82f6; }
+  .hist-session.active-session { border-color: #3b82f6; background: #0f1f3d; }
+  .hist-title { font-size: 12px; color: #e2e8f0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px; padding-right: 18px; }
+  .hist-meta { font-size: 10px; color: #475569; display: flex; align-items: center; gap: 6px; }
+  .hist-sev { border-radius: 2px; padding: 0px 5px; font-size: 9px; font-weight: 800; color: #fff; }
+  .hist-sev.P1 { background: #ef4444; } .hist-sev.P2 { background: #f97316; }
+  .hist-sev.P3 { background: #3b82f6; } .hist-sev.P4 { background: #475569; }
+  .hist-sev.UNKNOWN { background: #334155; }
+  .hist-del { position: absolute; top: 6px; right: 7px; background: none; border: none; color: #334155; font-size: 13px; cursor: pointer; line-height: 1; padding: 0 2px; }
+  .hist-del:hover { color: #ef4444; }
+  .hist-turns { font-size: 10px; color: #475569; }
+  .hist-divider { font-size: 10px; color: #334155; text-align: center; padding: 4px 0 6px; letter-spacing: .05em; text-transform: uppercase; }
+  .new-chat-btn { width: 100%; background: #1e293b; border: 1px solid #334155; border-radius: 6px; color: #94a3b8; font-size: 12px; font-weight: 600; padding: 7px 0; cursor: pointer; font-family: inherit; transition: all .15s; margin-bottom: 10px; }
+  .new-chat-btn:hover { border-color: #3b82f6; color: #e2e8f0; }
+  .similar-banner { background: #0c1e38; border: 1px solid #1d4ed8; border-radius: 6px; padding: 8px 10px; margin-bottom: 8px; font-size: 11px; color: #60a5fa; line-height: 1.5; }
+  .similar-banner strong { display: block; margin-bottom: 4px; color: #93c5fd; }
+
+  /* Upload zone */
+  .upload-zone { border: 1px dashed #334155; border-radius: 6px; padding: 12px 10px; text-align: center; cursor: pointer; transition: border-color .15s; }
+  .upload-zone:hover, .upload-zone.drag { border-color: #3b82f6; background: #0f1f3d; }
+  .upload-zone p { font-size: 11px; color: #475569; line-height: 1.5; }
+  .upload-zone strong { color: #3b82f6; display: block; font-size: 12px; margin-bottom: 4px; }
+  #fileInput { display: none; }
+  #uploadStatus { font-size: 11px; color: #2da44e; margin-top: 5px; min-height: 14px; text-align: center; }
+
+  /* ── Main ── */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .messages { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
+
+  /* Quick prompts */
+  .quick-row { padding: 0 24px 10px; display: flex; gap: 7px; flex-wrap: wrap; }
+  .qp { background: #1e293b; border: 1px solid #334155; border-radius: 6px; padding: 5px 11px; font-size: 12px; color: #94a3b8; cursor: pointer; transition: all .15s; }
+  .qp:hover { border-color: #3b82f6; color: #e2e8f0; background: #1e3a5f; }
+
+  /* Input bar */
+  .input-bar { padding: 12px 24px; background: #161b27; border-top: 1px solid #2d3748; display: flex; gap: 10px; align-items: flex-end; flex-shrink: 0; }
+  textarea { flex: 1; background: #1e293b; border: 1px solid #334155; border-radius: 8px; color: #e2e8f0; font-family: inherit; font-size: 14px; padding: 10px 14px; resize: none; outline: none; min-height: 44px; max-height: 120px; line-height: 1.5; }
+  textarea:focus { border-color: #3b82f6; }
+  textarea::placeholder { color: #475569; }
+  .send-btn { background: #3b82f6; border: none; border-radius: 8px; color: #fff; font-size: 13px; font-weight: 600; padding: 0 18px; cursor: pointer; height: 44px; white-space: nowrap; }
+  .send-btn:hover { background: #2563eb; }
+  .send-btn:disabled { background: #334155; cursor: not-allowed; }
+
+  /* ── Messages ── */
+  .msg { display: flex; gap: 10px; }
+  .msg.user { flex-direction: row-reverse; }
+  .av { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 2px; }
+  .av.bot { background: #1e3a5f; color: #3b82f6; }
+  .av.user { background: #2d1b69; color: #a78bfa; }
+  .bubble { max-width: calc(100% - 80px); border-radius: 10px; padding: 12px 16px; line-height: 1.7; }
+  .bubble.bot { background: #1e293b; border: 1px solid #2d3748; border-radius: 0 10px 10px 10px; }
+  .bubble.user { background: #1e3a5f; border: 1px solid #1d4ed8; border-radius: 10px 0 10px 10px; color: #bfdbfe; }
+
+  /* ── Bob Workflow Panel ── */
+  .bob-workflow { background: #0d1117; border: 1px solid #1d4ed8; border-radius: 8px; padding: 12px 14px; margin-bottom: 4px; font-size: 12px; width: 100%; }
+  .bob-workflow-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .bob-workflow-header .bw-title { font-size: 11px; font-weight: 700; color: #3b82f6; text-transform: uppercase; letter-spacing: .08em; flex: 1; }
+  .bob-workflow-header .bw-alert { font-size: 11px; color: #475569; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 240px; }
+  .bw-step { display: flex; align-items: flex-start; gap: 8px; padding: 4px 0; border-bottom: 1px solid #1e293b; }
+  .bw-step:last-child { border-bottom: none; }
+  .bw-icon { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; flex-shrink: 0; margin-top: 1px; }
+  .bw-icon.pending  { background: #1e293b; color: #475569; border: 1px solid #334155; }
+  .bw-icon.running  { background: #1e3a5f; color: #3b82f6; border: 1px solid #1d4ed8; animation: blink .8s infinite; }
+  .bw-icon.done     { background: #0d2615; color: #22c55e; border: 1px solid #166534; }
+  .bw-icon.skipped  { background: #1e293b; color: #334155; border: 1px solid #2d3748; }
+  .bw-label { font-size: 12px; color: #94a3b8; flex: 1; padding-top: 2px; }
+  .bw-label.running { color: #93c5fd; }
+  .bw-label.done    { color: #4ade80; }
+  .bw-label.skipped { color: #334155; text-decoration: line-through; }
+  .bw-detail { font-size: 11px; color: #475569; margin-top: 2px; font-family: "Consolas","Monaco",monospace; }
+  .bw-collapsed { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #22c55e; padding: 2px 0; }
+  .bw-collapsed .bw-dots { display: flex; gap: 4px; }
+  .bw-collapsed .bw-dot-done { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; }
+
+  /* ── Severity badge ── */
+  .sev-banner { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; padding: 7px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+  .sev-banner.P1 { background: #450a0a; border: 1px solid #991b1b; color: #fca5a5; }
+  .sev-banner.P2 { background: #431407; border: 1px solid #9a3412; color: #fdba74; }
+  .sev-banner.P3 { background: #0c2340; border: 1px solid #1d4ed8; color: #93c5fd; }
+  .sev-banner.P4 { background: #1a1a2e; border: 1px solid #334155; color: #94a3b8; }
+  .sev-pill { border-radius: 3px; padding: 1px 7px; font-size: 11px; font-weight: 800; color: #fff; }
+  .sev-pill.P1 { background: #ef4444; }
+  .sev-pill.P2 { background: #f97316; }
+  .sev-pill.P3 { background: #3b82f6; }
+  .sev-pill.P4 { background: #475569; }
+
+  /* ── Markdown ── */
+  .bubble.bot h1,.bubble.bot h2 { color: #f1f5f9; font-size: 14px; font-weight: 700; margin: 14px 0 6px; padding-bottom: 4px; border-bottom: 1px solid #2d3748; }
+  .bubble.bot h3 { color: #94a3b8; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing:.05em; margin: 10px 0 5px; }
+  .bubble.bot p { color: #cbd5e1; font-size: 13px; margin-bottom: 8px; }
+  .bubble.bot ul,.bubble.bot ol { padding-left: 20px; margin-bottom: 8px; }
+  .bubble.bot li { color: #cbd5e1; font-size: 13px; margin-bottom: 4px; }
+  .bubble.bot strong { color: #f1f5f9; }
+  .bubble.bot em { color: #94a3b8; }
+  .bubble.bot code { background: #0f172a; color: #7dd3fc; border: 1px solid #1e293b; border-radius: 3px; padding: 1px 6px; font-family: "Consolas","Monaco",monospace; font-size: 12px; }
+  .bubble.bot blockquote { border-left: 3px solid #3b82f6; padding-left: 12px; color: #64748b; margin: 8px 0; font-style: italic; }
+  .bubble.bot hr { border: none; border-top: 1px solid #2d3748; margin: 10px 0; }
+
+  /* ── Code block with copy button ── */
+  .code-wrapper { position: relative; margin: 8px 0; }
+  .code-wrapper pre { background: #0f172a; border: 1px solid #1e293b; border-radius: 6px; padding: 12px 12px 12px 14px; overflow-x: auto; }
+  .code-wrapper pre code { background: none; border: none; padding: 0; color: #7dd3fc; font-size: 12px; font-family: "Consolas","Monaco",monospace; white-space: pre; }
+  .copy-btn { position: absolute; top: 7px; right: 7px; background: #1e293b; border: 1px solid #334155; border-radius: 4px; color: #64748b; font-size: 11px; padding: 3px 9px; cursor: pointer; font-family: inherit; transition: all .15s; opacity: 0; }
+  .code-wrapper:hover .copy-btn { opacity: 1; }
+  .copy-btn:hover { border-color: #3b82f6; color: #e2e8f0; }
+  .copy-btn.copied { color: #2da44e; border-color: #2da44e; }
+
+  /* ── Sources bar ── */
+  .sources { margin-top: 10px; padding-top: 8px; border-top: 1px solid #1e293b; display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+  .src-chip { background: #0f2942; border: 1px solid #1d4ed8; border-radius: 3px; font-size: 11px; color: #60a5fa; padding: 2px 8px; }
+  .report-btn { margin-left: auto; background: #1a1208; border: 1px solid #92400e; border-radius: 4px; color: #fbbf24; font-size: 11px; padding: 3px 10px; cursor: pointer; font-family: inherit; }
+  .report-btn:hover { background: #292009; border-color: #d97706; }
+  .iac-btn { background: #0d1f12; border: 1px solid #166534; border-radius: 4px; color: #4ade80; font-size: 11px; padding: 3px 10px; cursor: pointer; font-family: inherit; }
+  .iac-btn:hover { background: #14291c; border-color: #22c55e; }
+  .orchestrate-btn { background: #160d2a; border: 1px solid #6d28d9; border-radius: 4px; color: #c4b5fd; font-size: 11px; padding: 3px 10px; cursor: pointer; font-family: inherit; }
+  .orchestrate-btn:hover { background: #1e1040; border-color: #8b5cf6; }
+
+  /* ── Response time badge ── */
+  .elapsed-badge { font-size: 10px; color: #475569; margin-left: 6px; padding: 1px 6px; background: #161b27; border: 1px solid #2d3748; border-radius: 3px; font-family: "Consolas","Monaco",monospace; }
+  .elapsed-badge.fast { color: #22c55e; border-color: #166534; background: #0d2615; }
+  .elapsed-badge.mid  { color: #fbbf24; border-color: #92400e; background: #1a1208; }
+  .elapsed-badge.slow { color: #f97316; border-color: #9a3412; background: #431407; }
+
+  /* ── Streaming cursor ── */
+  .stream-cursor { display: inline-block; width: 2px; height: 14px; background: #3b82f6; margin-left: 2px; animation: blink .7s infinite; vertical-align: text-bottom; }
+  @keyframes blink { 0%,100%{opacity:1}50%{opacity:0} }
+
+  /* ── Typing indicator ── */
+  .typing-dots { display: flex; gap: 4px; align-items: center; padding: 8px 0; }
+  .typing-dots span { width: 7px; height: 7px; background: #3b82f6; border-radius: 50%; animation: tdot 1.2s infinite; }
+  .typing-dots span:nth-child(2){animation-delay:.2s} .typing-dots span:nth-child(3){animation-delay:.4s}
+  @keyframes tdot{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-7px)}}
+
+  /* ── Report modal ── */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 100; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: #161b27; border: 1px solid #2d3748; border-radius: 10px; width: 90%; max-width: 760px; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; }
+  .modal-header { padding: 16px 20px; border-bottom: 1px solid #2d3748; display: flex; align-items: center; gap: 10px; }
+  .modal-header h2 { font-size: 15px; font-weight: 700; color: #f1f5f9; flex: 1; }
+  .modal-close { background: none; border: none; color: #64748b; font-size: 20px; cursor: pointer; padding: 0 4px; line-height: 1; }
+  .modal-close:hover { color: #e2e8f0; }
+  .modal-body { flex: 1; overflow-y: auto; padding: 20px; }
+  .modal-footer { padding: 12px 20px; border-top: 1px solid #2d3748; display: flex; gap: 10px; justify-content: flex-end; }
+  .modal-btn { border-radius: 6px; padding: 7px 16px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; border: none; }
+  .modal-btn.primary { background: #3b82f6; color: #fff; }
+  .modal-btn.primary:hover { background: #2563eb; }
+  .modal-btn.secondary { background: #1e293b; border: 1px solid #334155; color: #94a3b8; }
+  .modal-btn.secondary:hover { color: #e2e8f0; }
+  #reportContent { color: #cbd5e1; font-size: 13px; line-height: 1.7; }
+  #reportContent h1 { color: #f1f5f9; font-size: 17px; margin-bottom: 12px; }
+  #reportContent h2 { color: #f1f5f9; font-size: 14px; font-weight: 700; margin: 16px 0 8px; padding-bottom: 4px; border-bottom: 1px solid #2d3748; }
+  #reportContent h3 { color: #94a3b8; font-size: 12px; font-weight: 700; text-transform: uppercase; margin: 12px 0 5px; }
+  #reportContent p { margin-bottom: 8px; }
+  #reportContent ul,#reportContent ol { padding-left: 20px; margin-bottom: 8px; }
+  #reportContent li { margin-bottom: 4px; }
+  #reportContent table { width: 100%; border-collapse: collapse; font-size: 12px; margin: 8px 0; }
+  #reportContent th { background: #1e293b; border: 1px solid #2d3748; padding: 6px 10px; text-align: left; color: #94a3b8; }
+  #reportContent td { border: 1px solid #2d3748; padding: 6px 10px; }
+  #reportContent strong { color: #f1f5f9; }
+  #reportContent code { background: #0f172a; color: #7dd3fc; border: 1px solid #1e293b; border-radius: 3px; padding: 1px 6px; font-size: 11px; font-family: monospace; }
+
+  /* ── Welcome ── */
+  .welcome { text-align: center; margin: auto; padding: 40px 20px; max-width: 560px; }
+  .welcome h2 { font-size: 22px; font-weight: 700; color: #f1f5f9; margin-bottom: 8px; }
+  .welcome p { color: #64748b; font-size: 13px; margin-bottom: 24px; line-height: 1.7; }
+  .scenarios { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .sc { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 12px 14px; text-align: left; cursor: pointer; transition: border-color .15s; }
+  .sc:hover { border-color: #3b82f6; }
+  .sc .sc-label { font-size: 11px; font-weight: 700; color: #ef4444; margin-bottom: 4px; text-transform: uppercase; }
+  .sc .sc-label.green { color: #22c55e; }
+  .sc .sc-label.purple { color: #a78bfa; }
+  .sc .sc-text { font-size: 12px; color: #94a3b8; line-height: 1.5; }
+
+  .error-msg { color: #fca5a5; background: #450a0a; border: 1px solid #991b1b; border-radius: 6px; padding: 10px 14px; font-size: 13px; }
+  .info-msg { color: #93c5fd; background: #0c2340; border: 1px solid #1d4ed8; border-radius: 6px; padding: 10px 14px; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="pulse" id="pulseEl"></div>
+  <h1>Infrastructure Incident Triage Assistant</h1>
+  <span class="ibm">IBM Bob</span>
+  <div class="header-right">
+    <span id="statusLabel">Connecting...</span>
+    <label class="stream-toggle" title="Stream response token-by-token">
+      <input type="checkbox" id="streamToggle" checked/> Streaming
+    </label>
+    <button class="header-btn" id="clearBtn">Clear chat</button>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <!-- Tabs -->
+    <div class="sidebar-tabs">
+      <button class="stab active" data-tab="knowledge">Knowledge</button>
+      <button class="stab" data-tab="history">History</button>
+    </div>
+
+    <!-- Knowledge panel (existing content) -->
+    <div class="sidebar-panel active" id="panel-knowledge">
+      <div>
+        <h3>Runbooks</h3>
+        <div class="doc-item"><div class="dot rb"></div>HIGH_CPU_RUNBOOK</div>
+        <div class="doc-item"><div class="dot rb"></div>DISK_SPACE_RUNBOOK</div>
+        <div class="doc-item"><div class="dot rb"></div>SERVICE_DOWN_RUNBOOK</div>
+        <div class="doc-item"><div class="dot rb"></div>NETWORK_LATENCY_RUNBOOK</div>
+        <div class="doc-item"><div class="dot rb"></div>PERMISSION_DRIFT_RUNBOOK</div>
+      </div>
+      <div>
+        <h3>Incidents</h3>
+        <div class="doc-item"><div class="dot inc"></div>INC-2847 · CPU P2</div>
+        <div class="doc-item"><div class="dot inc"></div>INC-3012 · CPU P1</div>
+        <div class="doc-item"><div class="dot inc"></div>INC-3301 · Pool P2</div>
+        <div class="doc-item"><div class="dot inc"></div>INC-3455 · Disk P3</div>
+        <div class="doc-item"><div class="dot inc"></div>INC-3601 · Down P1</div>
+      </div>
+      <div>
+        <h3>Policies</h3>
+        <div class="doc-item"><div class="dot pol"></div>ESCALATION_POLICY</div>
+        <div class="doc-item"><div class="dot pol"></div>ALERT_DEFINITIONS</div>
+      </div>
+      <div>
+        <h3>Upload Document</h3>
+        <select id="folderSelect" style="width:100%;background:#1e293b;border:1px solid #334155;color:#94a3b8;border-radius:4px;padding:5px 8px;font-size:12px;margin-bottom:6px;font-family:inherit;">
+          <option value="runbooks">runbooks/</option>
+          <option value="incidents">incidents/</option>
+          <option value="docs">docs/</option>
+        </select>
+        <div class="upload-zone" id="uploadZone">
+          <strong>+ Add Document</strong>
+          <p>Drop a .md or .txt file here, or click to browse</p>
+        </div>
+        <input type="file" id="fileInput" accept=".md,.txt"/>
+        <div id="uploadStatus"></div>
+      </div>
+      <div>
+        <div id="docCount"></div>
+        <div id="indexBadge"></div>
+      </div>
+    </div>
+
+    <!-- History panel -->
+    <div class="sidebar-panel" id="panel-history">
+      <button class="new-chat-btn" id="newChatBtn">+ New Chat</button>
+      <div id="similarBanner"></div>
+      <div id="historyList"></div>
+    </div>
+  </div>
+
+  <!-- Main chat -->
+  <div class="main">
+    <div class="messages" id="messages">
+      <div class="welcome" id="welcome">
+        <h2>AI Incident Engineer</h2>
+        <p>Describe an alert — IBM Bob will triage it, plan the investigation, generate IaC remediation templates, and auto-write a runbook. All grounded in your actual documentation.</p>
+        <div class="scenarios">
+          <div class="sc" data-q="CPU usage on prod-db-01 is at 98% for the last 12 minutes">
+            <div class="sc-label">HIGH CPU</div>
+            <div class="sc-text">CPU usage on prod-db-01 at 98% for 12 minutes</div>
+          </div>
+          <div class="sc" data-q="Payment service health check has been failing for 5 minutes with 503 errors">
+            <div class="sc-label">SERVICE DOWN</div>
+            <div class="sc-text">Payment service health check failing, 503 errors</div>
+          </div>
+          <div class="sc" data-sc-iac data-q="CPU usage on prod-db-01 is at 98% for the last 12 minutes">
+            <div class="sc-label green">GENERATE IaC FIX</div>
+            <div class="sc-text">Generate Terraform, Ansible &amp; Prometheus templates for a CPU alert</div>
+          </div>
+          <div class="sc" data-sc-orch data-q="CPU usage on prod-db-01 is at 98% for the last 12 minutes">
+            <div class="sc-label purple">PLAN INVESTIGATION</div>
+            <div class="sc-text">Bob builds a branching investigation workflow for CPU alert</div>
+          </div>
+          <div class="sc" data-q="Disk usage on prod-app-03 is at 92% and still growing">
+            <div class="sc-label">DISK SPACE</div>
+            <div class="sc-text">Disk usage on prod-app-03 at 92%, growing</div>
+          </div>
+          <div class="sc" data-q="Has a CPU spike like this happened before on prod-db? What was the root cause?">
+            <div class="sc-label">HISTORY</div>
+            <div class="sc-text">Has this CPU spike happened before on prod-db?</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="quick-row">
+      <div class="qp" data-q="Who do I escalate a P1 incident to and what are the steps?">Escalate P1?</div>
+      <div class="qp" data-q="What is the rollback procedure for a bad Kubernetes deployment?">Rollback procedure?</div>
+      <div class="qp" data-q="How do I find the top CPU consuming processes on a Linux server?">Top CPU processes?</div>
+      <div class="qp" data-q="What are the immediate steps for a disk space critical alert?">Disk space steps?</div>
+      <div class="qp" data-q="Show me past incidents related to connection pool exhaustion">Past pool incidents?</div>
+      <div class="qp qp-iac" data-q="CPU usage on prod-db-01 is at 98% for the last 12 minutes" style="border-color:#166534;color:#4ade80;">Generate IaC Fix</div>
+      <div class="qp qp-orch" data-q="CPU usage on prod-db-01 is at 98% for the last 12 minutes" style="border-color:#6d28d9;color:#c4b5fd;">Plan Investigation</div>
+    </div>
+
+    <div class="input-bar">
+      <textarea id="input" placeholder="Describe an alert or ask a triage question... (Enter to send, Shift+Enter for newline)" rows="1"></textarea>
+      <button class="send-btn" id="sendBtn">Send</button>
+    </div>
+  </div>
+</div>
+
+<!-- Report Modal -->
+<div class="modal-overlay" id="reportModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Incident Report</h2>
+      <button class="modal-close" id="closeModal">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="reportContent"><div class="typing-dots"><span></span><span></span><span></span></div></div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn secondary" id="closeModal2">Close</button>
+      <button class="modal-btn secondary" id="saveRunbookBtn" style="border-color:#166534;color:#4ade80;" title="Generate a runbook from this incident and add it to the knowledge base">Save as Runbook</button>
+      <button class="modal-btn primary" id="copyReportBtn">Copy Report</button>
+    </div>
+  </div>
+</div>
+
+<!-- IaC Modal -->
+<div class="modal-overlay" id="iacModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 style="color:#4ade80;">IaC Remediation Templates</h2>
+      <button class="modal-close" id="closeIacModal">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="iacContent"><div class="typing-dots"><span></span><span></span><span></span></div></div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn secondary" id="closeIacModal2">Close</button>
+      <button class="modal-btn primary" id="copyIacBtn">Copy All</button>
+    </div>
+  </div>
+</div>
+
+<!-- Orchestration Modal -->
+<div class="modal-overlay" id="orchModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 style="color:#c4b5fd;">Investigation Workflow</h2>
+      <button class="modal-close" id="closeOrchModal">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="orchContent"><div class="typing-dots"><span></span><span></span><span></span></div></div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn secondary" id="closeOrchModal2">Close</button>
+      <button class="modal-btn primary" id="copyOrchBtn">Copy Workflow</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = "";
+
+// ── State ──────────────────────────────────────────────────────
+let conversationLog  = [];   // [{role, text, severity?}] for current session
+let lastAlertQuery   = "";
+let currentSessionId = null; // ID of the session being viewed (null = live)
+const HISTORY_KEY    = "ica_chat_history";  // localStorage key
+
+// ── localStorage helpers ────────────────────────────────────────
+function loadHistory() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]"); } catch { return []; }
+}
+function saveHistory(sessions) {
+  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(sessions)); } catch {}
+}
+
+// Save current conversation as a new session entry
+function commitSession() {
+  if (conversationLog.length < 2) return; // nothing worth saving
+  const sessions = loadHistory();
+  // Derive a title from the first user message
+  const firstUser = conversationLog.find(m => m.role === "user");
+  const title = firstUser ? firstUser.text.slice(0, 60) + (firstUser.text.length > 60 ? "…" : "") : "Untitled session";
+  // Detect highest severity in session
+  const sevOrder = ["P1","P2","P3","P4","UNKNOWN"];
+  const severity = conversationLog.reduce((best, m) => {
+    if (!m.severity) return best;
+    const i = sevOrder.indexOf(m.severity);
+    const bi = sevOrder.indexOf(best);
+    return (i !== -1 && i < bi) ? m.severity : best;
+  }, "UNKNOWN");
+  const session = {
+    id: Date.now().toString(),
+    title,
+    severity,
+    ts: new Date().toISOString(),
+    turns: Math.floor(conversationLog.length / 2),
+    log: conversationLog.slice(),
+  };
+  sessions.unshift(session);
+  // Keep max 50 sessions
+  saveHistory(sessions.slice(0, 50));
+  renderHistoryList();
+}
+
+// ── Health check ───────────────────────────────────────────────
+async function checkHealth() {
+  try {
+    const r = await fetch(`${API}/health`);
+    const d = await r.json();
+    document.getElementById("statusLabel").textContent =
+      `${d.documents_indexed} docs · ${d.total_chunks} chunks · ${d.llm}`;
+    document.getElementById("docCount").textContent =
+      `${d.documents_indexed} documents indexed`;
+    const badge = document.getElementById("indexBadge");
+    badge.textContent = d.index_backend === "chromadb" ? "ChromaDB (persistent)" : "NumPy (in-memory)";
+    badge.style.display = "inline-block";
+    document.getElementById("pulseEl").classList.remove("error");
+  } catch {
+    document.getElementById("statusLabel").textContent = "API not reachable";
+    document.getElementById("statusLabel").style.color = "#ef4444";
+    document.getElementById("pulseEl").classList.add("error");
+  }
+}
+checkHealth();
+
+// ── Severity helpers ───────────────────────────────────────────
+const SEV_LABELS = {
+  P1: "CRITICAL — Immediate action required",
+  P2: "HIGH — Respond within 15 minutes",
+  P3: "MEDIUM — Respond within 1 hour",
+  P4: "LOW — Schedule for next sprint",
+  UNKNOWN: null
+};
+
+function severityBanner(sev) {
+  if (!sev || sev === "UNKNOWN") return "";
+  return `<div class="sev-banner ${sev}">
+    <span class="sev-pill ${sev}">${sev}</span>
+    <span>${SEV_LABELS[sev]}</span>
+  </div>`;
+}
+
+function elapsedBadge(ms) {
+  if (!ms) return "";
+  const cls = ms < 3000 ? "fast" : ms < 8000 ? "mid" : "slow";
+  const label = ms < 1000 ? `${ms}ms` : `${(ms/1000).toFixed(1)}s`;
+  return `<span class="elapsed-badge ${cls}" title="Response time">${label}</span>`;
+}
+
+// ── Markdown renderer ──────────────────────────────────────────
+function renderMarkdown(md) {
+  const codeBlocks = [];
+  md = md
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/```[\w]*\n?([\s\S]*?)```/g, (_, code) => {
+      const clean = code.trim()
+        .replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">");
+      const idx = codeBlocks.length;
+      codeBlocks.push(clean);
+      return `%%CODEBLOCK_${idx}%%`;
+    })
+    .replace(/`([^`]+)`/g, (_, c) => `<code>${c.replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">")}</code>`)
+    .replace(/^## (.+)$/gm, "<h2>$1</h2>")
+    .replace(/^### (.+)$/gm, "<h3>$1</h3>")
+    .replace(/^# (.+)$/gm, "<h1>$1</h1>")
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>")
+    .replace(/^---+$/gm, "<hr>")
+    .replace(/^> (.+)$/gm, "<blockquote>$1</blockquote>")
+    .replace(/^\* (.+)$/gm, "<li>$1</li>")
+    .replace(/^- (.+)$/gm, "<li>$1</li>")
+    .replace(/^\d+\. (.+)$/gm, "<li>$1</li>")
+    .replace(/(<li>[\s\S]+?<\/li>)(\n(?!<li>)|\s*$)/g, "<ul>$1</ul>$2")
+    .replace(/^(?!<[a-zA-Z/%])(.*\S.*)$/gm, "<p>$1</p>");
+
+  md = md.replace(/%%CODEBLOCK_(\d+)%%/g, (_, i) => {
+    const code = codeBlocks[parseInt(i)];
+    const escaped = code.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    return `<div class="code-wrapper"><pre><code>${escaped}</code></pre><button class="copy-btn" data-code="${encodeURIComponent(code)}">Copy</button></div>`;
+  });
+
+  return md;
+}
+
+// ── Copy button handler ────────────────────────────────────────
+document.getElementById("messages").addEventListener("click", e => {
+  const btn = e.target.closest(".copy-btn");
+  if (!btn) return;
+  const code = decodeURIComponent(btn.dataset.code);
+  navigator.clipboard.writeText(code).then(() => {
+    btn.textContent = "Copied!";
+    btn.classList.add("copied");
+    setTimeout(() => { btn.textContent = "Copy"; btn.classList.remove("copied"); }, 2000);
+  });
+});
+
+// ── Chat helpers ───────────────────────────────────────────────
+const messagesEl = document.getElementById("messages");
+const inputEl    = document.getElementById("input");
+const sendBtn    = document.getElementById("sendBtn");
+
+function removeWelcome() {
+  const w = document.getElementById("welcome");
+  if (w) w.remove();
+}
+
+function addUserMsg(text) {
+  const div = document.createElement("div");
+  div.className = "msg user";
+  div.innerHTML = `<div class="av user">U</div><div class="bubble user">${text.replace(/&/g,"&amp;").replace(/</g,"&lt;")}</div>`;
+  messagesEl.appendChild(div);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+  return div;
+}
+
+function addTyping() {
+  const div = document.createElement("div");
+  div.className = "msg"; div.id = "typing";
+  div.innerHTML = `<div class="av bot">BOB</div><div class="bubble bot"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+  messagesEl.appendChild(div);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function removeTyping() {
+  const t = document.getElementById("typing");
+  if (t) t.remove();
+}
+
+function addBotMsg(answer, sources, severity, query, elapsed_ms) {
+  const div = document.createElement("div");
+  div.className = "msg";
+  const chips = sources.map(s => `<span class="src-chip">${s}</span>`).join("");
+  const banner = severityBanner(severity);
+  const timeBadge = elapsedBadge(elapsed_ms);
+  div.innerHTML = `
+    <div class="av bot">BOB</div>
+    <div class="bubble bot">
+      ${banner}
+      <div class="md-body">${renderMarkdown(answer)}</div>
+      ${sources.length ? `
+        <div class="sources">
+          ${chips}
+          ${timeBadge}
+          <button class="orchestrate-btn" data-query="${encodeURIComponent(query)}">Plan Investigation</button>
+          <button class="iac-btn" data-query="${encodeURIComponent(query)}">Generate Fix</button>
+          <button class="report-btn" data-query="${encodeURIComponent(query)}">Generate Report</button>
+        </div>` : ""}
+    </div>`;
+  messagesEl.appendChild(div);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+  return div;
+}
+
+function addErrorMsg(msg) {
+  const div = document.createElement("div");
+  div.className = "msg";
+  div.innerHTML = `<div class="av bot">BOB</div><div class="bubble bot"><div class="error-msg">${msg}</div></div>`;
+  messagesEl.appendChild(div);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function addInfoMsg(msg) {
+  const div = document.createElement("div");
+  div.className = "msg";
+  div.innerHTML = `<div class="av bot">BOB</div><div class="bubble bot"><div class="info-msg">${msg}</div></div>`;
+  messagesEl.appendChild(div);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+// ── Bob Workflow Panel ─────────────────────────────────────────
+class BobWorkflow {
+  constructor(query, severity) {
+    this.steps = [
+      { id: "retrieve",  label: "Retrieving relevant runbooks & incidents", detail: "" },
+      { id: "severity",  label: "Classifying incident severity",            detail: "" },
+      { id: "history",   label: "Searching past incident history",          detail: "" },
+      { id: "escalation",label: "Loading escalation policy",                detail: "" },
+      { id: "generate",  label: "Generating triage response",               detail: "" },
+      { id: "iac",       label: "IaC automation available",                 detail: "Click Generate Fix after response" },
+    ];
+    this.states = {};
+    this.steps.forEach(s => this.states[s.id] = "pending");
+
+    // Build DOM
+    this.el = document.createElement("div");
+    this.el.className = "msg";
+    const shortQ = query.length > 55 ? query.slice(0, 55) + "…" : query;
+    this.el.innerHTML = `
+      <div class="av bot" style="background:#0c2340;color:#3b82f6;border:1px solid #1d4ed8;">BOB</div>
+      <div style="flex:1;max-width:calc(100% - 80px)">
+        <div class="bob-workflow" id="bwPanel">
+          <div class="bob-workflow-header">
+            <span class="bw-title">Bob Workflow</span>
+            <span class="bw-alert">${shortQ.replace(/</g,"&lt;")}</span>
+          </div>
+          <div id="bwSteps"></div>
+        </div>
+      </div>`;
+    this._render();
+  }
+
+  _render() {
+    const el = this.el.querySelector("#bwSteps");
+    el.innerHTML = this.steps.map(s => {
+      const st = this.states[s.id];
+      const icon = st === "done" ? "✓" : st === "running" ? "●" : st === "skipped" ? "–" : "○";
+      const detail = s.detail ? `<div class="bw-detail">${s.detail}</div>` : "";
+      return `<div class="bw-step">
+        <div class="bw-icon ${st}">${icon}</div>
+        <div style="flex:1">
+          <div class="bw-label ${st}">${s.label}</div>
+          ${detail}
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  set(id, state, detail = "") {
+    this.states[id] = state;
+    const s = this.steps.find(s => s.id === id);
+    if (s && detail) s.detail = detail;
+    this._render();
+    if (this.el.closest("#messages")) {
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+  }
+
+  collapse(severity, sourceCount, elapsed_ms) {
+    const panel = this.el.querySelector("#bwPanel");
+    const sevLabel = { P1:"CRITICAL", P2:"HIGH", P3:"MEDIUM", P4:"LOW" }[severity] || "";
+    const sevColor = { P1:"#ef4444", P2:"#f97316", P3:"#3b82f6", P4:"#475569" }[severity] || "#334155";
+    const t = elapsed_ms < 1000 ? `${elapsed_ms}ms` : `${(elapsed_ms/1000).toFixed(1)}s`;
+    panel.innerHTML = `<div class="bw-collapsed">
+      <div class="bw-dots">${this.steps.map(() => `<div class="bw-dot-done"></div>`).join("")}</div>
+      <span style="color:#22c55e;font-weight:700">Bob completed workflow</span>
+      ${sevLabel ? `<span style="background:${sevColor};color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:3px">${severity}</span>` : ""}
+      <span style="color:#475569">${sourceCount} source${sourceCount!==1?"s":""} · ${t}</span>
+    </div>`;
+  }
+
+  mount() {
+    messagesEl.appendChild(this.el);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  remove() { if (this.el.parentNode) this.el.remove(); }
+}
+
+// ── Streaming send ─────────────────────────────────────────────
+async function sendStream(query) {
+  if (currentSessionId) startNewChat(); // if viewing history, start fresh
+  removeWelcome();
+  addUserMsg(query);
+  conversationLog.push({ role: "user", text: query });
+  lastAlertQuery = query;
+  inputEl.value = "";
+  inputEl.style.height = "44px";
+  sendBtn.disabled = true;
+
+  // Show Bob Workflow panel immediately
+  const workflow = new BobWorkflow(query);
+  workflow.mount();
+  workflow.set("retrieve", "running");
+
+  // Create a bot bubble ready for streaming
+  const botDiv = document.createElement("div");
+  botDiv.className = "msg";
+  botDiv.innerHTML = `<div class="av bot">BOB</div><div class="bubble bot"><div class="md-body"></div></div>`;
+
+  let severity = "UNKNOWN", sources = [], elapsed = 0;
+  let rawText = "";
+  let metaReceived = false;
+
+  try {
+    const res = await fetch(`${API}/query/stream`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        query,
+        history: conversationLog.slice(-6),   // last 3 exchanges
+        stream: true
+      })
+    });
+
+    if (!res.ok) throw new Error(`Server error ${res.status}`);
+
+    // Workflow: retrieve done, now classifying severity
+    workflow.set("retrieve", "done", `Top ${sources.length || "6"} chunks retrieved`);
+    workflow.set("severity", "running");
+
+    messagesEl.appendChild(botDiv);
+
+    const mdBody = botDiv.querySelector(".md-body");
+    const bubble = botDiv.querySelector(".bubble");
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let firstToken = false;
+
+    // Add streaming cursor
+    const cursor = document.createElement("span");
+    cursor.className = "stream-cursor";
+    mdBody.appendChild(cursor);
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      const lines = buffer.split("\n\n");
+      buffer = lines.pop(); // keep incomplete chunk
+
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        const json = line.slice(6).trim();
+        if (!json) continue;
+        let evt;
+        try { evt = JSON.parse(json); } catch { continue; }
+
+        if (evt.type === "meta") {
+          severity = evt.severity || "UNKNOWN";
+          sources  = evt.sources || [];
+          metaReceived = true;
+
+          // Tick workflow steps with real data
+          workflow.set("severity",   "done", `Severity: ${severity}`);
+          workflow.set("history",    "running");
+          await new Promise(r => setTimeout(r, 180));
+          const incSrcs = sources.filter(s => s.includes("incident"));
+          workflow.set("history",    "done", incSrcs.length ? `Found: ${incSrcs.map(s=>s.split("/").pop()).join(", ")}` : "No matching incidents");
+          workflow.set("escalation", "running");
+          await new Promise(r => setTimeout(r, 120));
+          const polSrcs = sources.filter(s => s.includes("docs") || s.includes("ESCALATION"));
+          workflow.set("escalation", "done", polSrcs.length ? `Loaded: ${polSrcs.map(s=>s.split("/").pop()).join(", ")}` : "Using default policy");
+          workflow.set("generate",   "running");
+
+          // Prepend severity banner
+          if (severity !== "UNKNOWN") {
+            const bannerDiv = document.createElement("div");
+            bannerDiv.innerHTML = severityBanner(severity);
+            bubble.insertBefore(bannerDiv.firstChild, mdBody);
+          }
+        } else if (evt.type === "token") {
+          rawText += evt.text;
+          if (!firstToken) {
+            firstToken = true;
+            workflow.set("retrieve", "done");
+          }
+          // Re-render markdown as text streams in
+          cursor.remove();
+          mdBody.innerHTML = renderMarkdown(rawText);
+          // Re-add cursor at end
+          const newCursor = document.createElement("span");
+          newCursor.className = "stream-cursor";
+          mdBody.appendChild(newCursor);
+          messagesEl.scrollTop = messagesEl.scrollHeight;
+        } else if (evt.type === "done") {
+          elapsed = evt.elapsed_ms || 0;
+        } else if (evt.type === "error") {
+          throw new Error(evt.text);
+        }
+      }
+    }
+
+    // Remove cursor, finalize render
+    mdBody.querySelectorAll(".stream-cursor").forEach(c => c.remove());
+    mdBody.innerHTML = renderMarkdown(rawText);
+
+    // Finish workflow steps and collapse
+    workflow.set("generate", "done");
+    workflow.set("iac",      "done", "Click Generate Fix below");
+    await new Promise(r => setTimeout(r, 400));
+    workflow.collapse(severity, sources.length, elapsed);
+
+    // Add sources bar
+    if (sources.length) {
+      const chips = sources.map(s => `<span class="src-chip">${s}</span>`).join("");
+      const sourcesDiv = document.createElement("div");
+      sourcesDiv.className = "sources";
+      sourcesDiv.innerHTML = `${chips}${elapsedBadge(elapsed)}<button class="orchestrate-btn" data-query="${encodeURIComponent(query)}">Plan Investigation</button><button class="iac-btn" data-query="${encodeURIComponent(query)}">Generate Fix</button><button class="report-btn" data-query="${encodeURIComponent(query)}">Generate Report</button>`;
+      bubble.appendChild(sourcesDiv);
+    }
+
+    conversationLog.push({ role: "assistant", text: rawText, severity });
+    renderSimilarBanner(severity, query);
+
+  } catch (err) {
+    workflow.remove();
+    if (botDiv.parentNode) botDiv.remove();
+    addErrorMsg(`Stream error. Make sure the server is running.<br><small>${err.message}</small>`);
+  } finally {
+    sendBtn.disabled = false;
+    inputEl.focus();
+  }
+}
+
+// ── Non-streaming send (fallback) ──────────────────────────────
+async function sendNormal(query) {
+  if (currentSessionId) startNewChat();
+  removeWelcome();
+  addUserMsg(query);
+  conversationLog.push({ role: "user", text: query });
+  lastAlertQuery = query;
+  inputEl.value = "";
+  inputEl.style.height = "44px";
+  sendBtn.disabled = true;
+  addTyping();
+
+  try {
+    const res = await fetch(`${API}/query`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        query,
+        history: conversationLog.slice(-6)
+      })
+    });
+    if (!res.ok) throw new Error(`Server error ${res.status}`);
+    const data = await res.json();
+    removeTyping();
+    addBotMsg(data.answer, data.sources, data.severity, query, data.elapsed_ms);
+    conversationLog.push({ role: "assistant", text: data.answer, severity: data.severity });
+    renderSimilarBanner(data.severity, query);
+  } catch (err) {
+    removeTyping();
+    addErrorMsg(`Could not reach the API. Make sure the server is running on port 8080.<br><small>${err.message}</small>`);
+  } finally {
+    sendBtn.disabled = false;
+    inputEl.focus();
+  }
+}
+
+// ── Main send dispatcher ───────────────────────────────────────
+async function send(query) {
+  query = query.trim();
+  if (!query) return;
+  const useStream = document.getElementById("streamToggle").checked;
+  if (useStream) {
+    await sendStream(query);
+  } else {
+    await sendNormal(query);
+  }
+}
+
+// ── Welcome screen ─────────────────────────────────────────────
+function showWelcome() {
+  messagesEl.innerHTML = "";
+  const welcome = document.createElement("div");
+  welcome.id = "welcome";
+  welcome.className = "welcome";
+  welcome.innerHTML = `<h2>AI Incident Engineer</h2>
+    <p>Describe an alert — IBM Bob will triage it, plan the investigation, generate IaC remediation templates, and auto-write a runbook. All grounded in your actual documentation.</p>
+    <div class="scenarios">
+      <div class="sc" data-q="CPU usage on prod-db-01 is at 98% for the last 12 minutes"><div class="sc-label">HIGH CPU</div><div class="sc-text">CPU usage on prod-db-01 at 98% for 12 minutes</div></div>
+      <div class="sc" data-q="Payment service health check has been failing for 5 minutes with 503 errors"><div class="sc-label">SERVICE DOWN</div><div class="sc-text">Payment service health check failing, 503 errors</div></div>
+      <div class="sc" data-q="Disk usage on prod-app-03 is at 92% and still growing"><div class="sc-label">DISK SPACE</div><div class="sc-text">Disk usage on prod-app-03 at 92%, growing</div></div>
+      <div class="sc" data-sc-iac data-q="CPU usage on prod-db-01 is at 98% for the last 12 minutes"><div class="sc-label green">GENERATE IaC FIX</div><div class="sc-text">Generate Terraform, Ansible &amp; Prometheus templates for a CPU alert</div></div>
+      <div class="sc" data-sc-orch data-q="CPU usage on prod-db-01 is at 98% for the last 12 minutes"><div class="sc-label purple">PLAN INVESTIGATION</div><div class="sc-text">Bob builds a branching investigation workflow for CPU alert</div></div>
+      <div class="sc" data-q="Has a CPU spike like this happened before on prod-db? What was the root cause?"><div class="sc-label">HISTORY</div><div class="sc-text">Has this CPU spike happened before on prod-db?</div></div>
+    </div>`;
+  messagesEl.appendChild(welcome);
+  welcome.querySelectorAll(".sc").forEach(el => {
+    el.addEventListener("click", () => {
+      if (el.hasAttribute("data-sc-iac")) { openIacModal(el.dataset.q); }
+      else if (el.hasAttribute("data-sc-orch")) { openOrchModal(el.dataset.q); }
+      else { send(el.dataset.q); }
+    });
+  });
+}
+
+// ── Start a brand-new chat (saves current session first) ────────
+function startNewChat() {
+  commitSession();
+  conversationLog  = [];
+  lastAlertQuery   = "";
+  currentSessionId = null;
+  document.getElementById("similarBanner").innerHTML = "";
+  showWelcome();
+  // Switch to knowledge tab so the main area is ready
+  switchTab("knowledge");
+}
+
+// ── Clear chat button ───────────────────────────────────────────
+document.getElementById("clearBtn").addEventListener("click", () => startNewChat());
+
+// ── New Chat button (in History panel) ─────────────────────────
+document.getElementById("newChatBtn").addEventListener("click", () => startNewChat());
+
+// ── Sidebar tab switching ──────────────────────────────────────
+function switchTab(tabName) {
+  document.querySelectorAll(".stab").forEach(t => t.classList.toggle("active", t.dataset.tab === tabName));
+  document.querySelectorAll(".sidebar-panel").forEach(p => p.classList.toggle("active", p.id === `panel-${tabName}`));
+}
+document.querySelectorAll(".stab").forEach(tab =>
+  tab.addEventListener("click", () => switchTab(tab.dataset.tab))
+);
+
+// ── History rendering ──────────────────────────────────────────
+function fmtDate(iso) {
+  const d = new Date(iso);
+  const now = new Date();
+  const diff = now - d;
+  if (diff < 60000) return "just now";
+  if (diff < 3600000) return `${Math.floor(diff/60000)}m ago`;
+  if (diff < 86400000) return `${Math.floor(diff/3600000)}h ago`;
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+function renderHistoryList() {
+  const sessions = loadHistory();
+  const el = document.getElementById("historyList");
+  if (!sessions.length) {
+    el.innerHTML = `<div class="hist-empty">No past sessions yet.<br>Start a conversation to build your history.</div>`;
+    return;
+  }
+
+  // Group into Today / Earlier
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const todaySessions    = sessions.filter(s => new Date(s.ts).getTime() >= todayStart);
+  const earlierSessions  = sessions.filter(s => new Date(s.ts).getTime() <  todayStart);
+
+  let html = "";
+  if (todaySessions.length) {
+    html += `<div class="hist-divider">Today</div>`;
+    html += todaySessions.map(s => sessionCard(s)).join("");
+  }
+  if (earlierSessions.length) {
+    html += `<div class="hist-divider">Earlier</div>`;
+    html += earlierSessions.map(s => sessionCard(s)).join("");
+  }
+  el.innerHTML = html;
+
+  // Attach listeners
+  el.querySelectorAll(".hist-session").forEach(card => {
+    card.addEventListener("click", e => {
+      if (e.target.closest(".hist-del")) return;
+      loadSession(card.dataset.id);
+    });
+    card.querySelector(".hist-del").addEventListener("click", e => {
+      e.stopPropagation();
+      deleteSession(card.dataset.id);
+    });
+  });
+}
+
+function sessionCard(s) {
+  const isActive = s.id === currentSessionId ? " active-session" : "";
+  return `<div class="hist-session${isActive}" data-id="${s.id}">
+    <button class="hist-del" title="Delete">×</button>
+    <div class="hist-title">${s.title.replace(/</g,"&lt;")}</div>
+    <div class="hist-meta">
+      <span class="hist-sev ${s.severity}">${s.severity}</span>
+      <span class="hist-turns">${s.turns} exchange${s.turns !== 1 ? "s" : ""}</span>
+      <span style="margin-left:auto">${fmtDate(s.ts)}</span>
+    </div>
+  </div>`;
+}
+
+// ── Load (replay) a past session ───────────────────────────────
+function loadSession(id) {
+  const sessions = loadHistory();
+  const session  = sessions.find(s => s.id === id);
+  if (!session) return;
+
+  // Save current live session first (if any)
+  if (!currentSessionId && conversationLog.length >= 2) commitSession();
+
+  currentSessionId = id;
+  conversationLog  = session.log.slice(); // restore log for context
+  lastAlertQuery   = "";
+
+  // Replay messages into the chat pane
+  messagesEl.innerHTML = "";
+  // Add a read-only banner
+  const banner = document.createElement("div");
+  banner.className = "msg";
+  banner.innerHTML = `<div class="av bot">BOB</div><div class="bubble bot"><div class="info-msg" style="font-size:11px">
+    <strong>Viewing past session</strong> · ${new Date(session.ts).toLocaleString()}<br>
+    Type a new message to continue this conversation, or click <strong>+ New Chat</strong> to start fresh.
+  </div></div>`;
+  messagesEl.appendChild(banner);
+
+  for (const turn of session.log) {
+    if (turn.role === "user") {
+      addUserMsg(turn.text);
+    } else {
+      // Re-render bot message (no sources stored, reconstruct from text)
+      const div = document.createElement("div");
+      div.className = "msg";
+      const sevBanner = turn.severity && turn.severity !== "UNKNOWN" ? severityBanner(turn.severity) : "";
+      div.innerHTML = `<div class="av bot">BOB</div><div class="bubble bot">${sevBanner}<div class="md-body">${renderMarkdown(turn.text)}</div></div>`;
+      messagesEl.appendChild(div);
+    }
+  }
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+
+  // Highlight similar sessions in banner
+  renderSimilarBanner(session.severity, session.title);
+  renderHistoryList(); // re-render to show active highlight
+  switchTab("history");
+}
+
+// ── Delete a session ───────────────────────────────────────────
+function deleteSession(id) {
+  const sessions = loadHistory().filter(s => s.id !== id);
+  saveHistory(sessions);
+  if (currentSessionId === id) {
+    currentSessionId = null;
+    startNewChat();
+  }
+  renderHistoryList();
+}
+
+// ── Similar sessions banner ────────────────────────────────────
+function renderSimilarBanner(severity, queryText) {
+  const el = document.getElementById("similarBanner");
+  if (!el) return;
+  if (!severity || severity === "UNKNOWN") { el.innerHTML = ""; return; }
+
+  const sessions = loadHistory();
+  // Extract keywords from the query (words > 4 chars, ignore common words)
+  const stopWords = new Set(["this","that","have","been","with","from","what","when","where","which","there","their","about","would","could","should","service","server","usage","past","same","like"]);
+  const keywords = (queryText || "").toLowerCase().split(/\W+/).filter(w => w.length > 4 && !stopWords.has(w));
+
+  const similar = sessions.filter(s => {
+    if (s.id === currentSessionId) return false;
+    if (s.severity === severity) return true;
+    if (!keywords.length) return false;
+    const titleLower = s.title.toLowerCase();
+    return keywords.some(k => titleLower.includes(k));
+  }).slice(0, 3);
+
+  if (!similar.length) { el.innerHTML = ""; return; }
+
+  const links = similar.map(s =>
+    `<span style="display:block;margin-top:4px;cursor:pointer;text-decoration:underline;color:#60a5fa" data-load="${s.id}">
+      <span class="hist-sev ${s.severity}" style="border-radius:2px;padding:0 4px;font-size:9px;font-weight:800;color:#fff;background:${sevColor(s.severity)}">${s.severity}</span>
+      ${s.title.slice(0, 45).replace(/</g,"&lt;")}${s.title.length > 45 ? "…" : ""}
+    </span>`
+  ).join("");
+
+  el.innerHTML = `<div class="similar-banner"><strong>Similar past sessions:</strong>${links}</div>`;
+  el.querySelectorAll("[data-load]").forEach(lnk =>
+    lnk.addEventListener("click", () => loadSession(lnk.dataset.load))
+  );
+}
+
+function sevColor(sev) {
+  return { P1:"#ef4444", P2:"#f97316", P3:"#3b82f6", P4:"#475569" }[sev] || "#334155";
+}
+
+// Initialise history list on load
+renderHistoryList();
+
+// ── Generate report (event delegation) ────────────────────────
+messagesEl.addEventListener("click", async e => {
+  const btn = e.target.closest(".report-btn");
+  if (!btn) return;
+
+  const query = decodeURIComponent(btn.dataset.query);
+  const conversation = conversationLog.map(m => `${m.role.toUpperCase()}: ${m.text}`).join("\n\n");
+
+  document.getElementById("reportContent").innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div>`;
+  document.getElementById("reportModal").classList.add("open");
+
+  try {
+    const res = await fetch(`${API}/report`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ conversation, query })
+    });
+    const data = await res.json();
+    document.getElementById("reportContent").innerHTML = renderMarkdown(data.report);
+  } catch (err) {
+    document.getElementById("reportContent").innerHTML = `<div class="error-msg">Failed to generate report: ${err.message}</div>`;
+  }
+});
+
+// ── Modal controls ─────────────────────────────────────────────
+document.getElementById("closeModal").addEventListener("click",  () => document.getElementById("reportModal").classList.remove("open"));
+document.getElementById("closeModal2").addEventListener("click", () => document.getElementById("reportModal").classList.remove("open"));
+document.getElementById("reportModal").addEventListener("click", e => { if (e.target === e.currentTarget) e.currentTarget.classList.remove("open"); });
+
+document.getElementById("copyReportBtn").addEventListener("click", () => {
+  const text = document.getElementById("reportContent").innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById("copyReportBtn");
+    btn.textContent = "Copied!";
+    setTimeout(() => btn.textContent = "Copy Report", 2000);
+  });
+});
+
+// ── File upload ────────────────────────────────────────────────
+const uploadZone   = document.getElementById("uploadZone");
+const fileInput    = document.getElementById("fileInput");
+const uploadStatus = document.getElementById("uploadStatus");
+
+uploadZone.addEventListener("click", () => fileInput.click());
+uploadZone.addEventListener("dragover", e => { e.preventDefault(); uploadZone.classList.add("drag"); });
+uploadZone.addEventListener("dragleave", () => uploadZone.classList.remove("drag"));
+uploadZone.addEventListener("drop", e => {
+  e.preventDefault();
+  uploadZone.classList.remove("drag");
+  const f = e.dataTransfer.files[0];
+  if (f) uploadFile(f);
+});
+fileInput.addEventListener("change", () => {
+  if (fileInput.files[0]) uploadFile(fileInput.files[0]);
+});
+
+async function uploadFile(file) {
+  uploadStatus.style.color = "#64748b";
+  uploadStatus.textContent = `Uploading ${file.name}...`;
+  const form = new FormData();
+  form.append("file", file);
+  form.append("folder", document.getElementById("folderSelect").value);
+  try {
+    const res = await fetch(`${API}/upload`, { method: "POST", body: form });
+    const data = await res.json();
+    if (data.error) {
+      uploadStatus.style.color = "#ef4444";
+      uploadStatus.textContent = data.error;
+    } else {
+      uploadStatus.style.color = "#2da44e";
+      uploadStatus.textContent = `${file.name} indexed`;
+      document.getElementById("statusLabel").textContent =
+        `${data.total_documents} docs · ${data.total_chunks} chunks`;
+      document.getElementById("docCount").textContent =
+        `${data.total_documents} documents indexed`;
+      addInfoMsg(`<strong>${file.name}</strong> uploaded and indexed. You can now ask questions about it.`);
+    }
+  } catch (err) {
+    uploadStatus.style.color = "#ef4444";
+    uploadStatus.textContent = "Upload failed";
+  }
+  fileInput.value = "";
+}
+
+// ── Inputs ─────────────────────────────────────────────────────
+sendBtn.addEventListener("click", () => send(inputEl.value));
+inputEl.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(inputEl.value); }
+});
+inputEl.addEventListener("input", () => {
+  inputEl.style.height = "44px";
+  inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + "px";
+});
+// Wire up static welcome screen special cards
+document.querySelectorAll("#welcome .sc").forEach(el => {
+  el.addEventListener("click", () => {
+    if (el.hasAttribute("data-sc-iac")) { openIacModal(el.dataset.q); }
+    else if (el.hasAttribute("data-sc-orch")) { openOrchModal(el.dataset.q); }
+    else { send(el.dataset.q); }
+  });
+});
+
+// Standard qp chips (non-special)
+document.querySelectorAll(".qp:not(.qp-iac):not(.qp-orch)").forEach(el =>
+  el.addEventListener("click", () => send(el.dataset.q))
+);
+
+// IaC quick-prompt chip
+document.querySelectorAll(".qp-iac").forEach(el =>
+  el.addEventListener("click", () => openIacModal(el.dataset.q))
+);
+
+// Orchestration quick-prompt chip
+document.querySelectorAll(".qp-orch").forEach(el =>
+  el.addEventListener("click", () => openOrchModal(el.dataset.q))
+);
+
+// ── IaC Modal ──────────────────────────────────────────────────
+async function openIacModal(query) {
+  const conversation = conversationLog.map(m => `${m.role.toUpperCase()}: ${m.text}`).join("\n\n");
+  document.getElementById("iacContent").innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div>`;
+  document.getElementById("iacModal").classList.add("open");
+
+  try {
+    const res = await fetch(`${API}/generate/iac`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query, conversation })
+    });
+    const data = await res.json();
+    document.getElementById("iacContent").innerHTML = renderMarkdown(data.iac);
+  } catch (err) {
+    document.getElementById("iacContent").innerHTML = `<div class="error-msg">Failed to generate IaC templates: ${err.message}</div>`;
+  }
+}
+
+document.getElementById("closeIacModal").addEventListener("click",  () => document.getElementById("iacModal").classList.remove("open"));
+document.getElementById("closeIacModal2").addEventListener("click", () => document.getElementById("iacModal").classList.remove("open"));
+document.getElementById("iacModal").addEventListener("click", e => { if (e.target === e.currentTarget) e.currentTarget.classList.remove("open"); });
+document.getElementById("copyIacBtn").addEventListener("click", () => {
+  const text = document.getElementById("iacContent").innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById("copyIacBtn");
+    btn.textContent = "Copied!";
+    setTimeout(() => btn.textContent = "Copy All", 2000);
+  });
+});
+
+// ── Generate Fix button (event delegation on messages) ─────────
+messagesEl.addEventListener("click", async e => {
+  const btn = e.target.closest(".iac-btn");
+  if (!btn) return;
+  openIacModal(decodeURIComponent(btn.dataset.query));
+});
+
+// ── Orchestration Modal ────────────────────────────────────────
+async function openOrchModal(query) {
+  document.getElementById("orchContent").innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div>`;
+  document.getElementById("orchModal").classList.add("open");
+
+  try {
+    const res = await fetch(`${API}/orchestrate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query, history: conversationLog.slice(-6) })
+    });
+    const data = await res.json();
+    document.getElementById("orchContent").innerHTML = renderMarkdown(data.workflow);
+  } catch (err) {
+    document.getElementById("orchContent").innerHTML = `<div class="error-msg">Failed to generate workflow: ${err.message}</div>`;
+  }
+}
+
+document.getElementById("closeOrchModal").addEventListener("click",  () => document.getElementById("orchModal").classList.remove("open"));
+document.getElementById("closeOrchModal2").addEventListener("click", () => document.getElementById("orchModal").classList.remove("open"));
+document.getElementById("orchModal").addEventListener("click", e => { if (e.target === e.currentTarget) e.currentTarget.classList.remove("open"); });
+document.getElementById("copyOrchBtn").addEventListener("click", () => {
+  const text = document.getElementById("orchContent").innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById("copyOrchBtn");
+    btn.textContent = "Copied!";
+    setTimeout(() => btn.textContent = "Copy Workflow", 2000);
+  });
+});
+
+// ── Plan Investigation button (event delegation on messages) ───
+messagesEl.addEventListener("click", async e => {
+  const btn = e.target.closest(".orchestrate-btn");
+  if (!btn) return;
+  openOrchModal(decodeURIComponent(btn.dataset.query));
+});
+
+// ── Save as Runbook (from report modal) ────────────────────────
+document.getElementById("saveRunbookBtn").addEventListener("click", async () => {
+  const btn = document.getElementById("saveRunbookBtn");
+  const conversation = conversationLog.map(m => `${m.role.toUpperCase()}: ${m.text}`).join("\n\n");
+  const query = lastAlertQuery || "infrastructure incident";
+
+  btn.textContent = "Generating...";
+  btn.disabled = true;
+
+  try {
+    // 1. Generate the runbook markdown
+    const genRes = await fetch(`${API}/generate/runbook`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query, conversation })
+    });
+    const genData = await genRes.json();
+    if (!genData.runbook || genData.runbook.startsWith("**Rate")) {
+      throw new Error(genData.runbook || "Generation failed");
+    }
+
+    // 2. Upload it to the knowledge base
+    const slug = query.toLowerCase().replace(/[^a-z0-9]+/g, "_").slice(0, 40);
+    const filename = `GENERATED_RUNBOOK_${slug}.md`;
+    const blob = new Blob([genData.runbook], { type: "text/markdown" });
+    const form = new FormData();
+    form.append("file", blob, filename);
+
+    const upRes = await fetch(`${API}/upload`, { method: "POST", body: form });
+    const upData = await upRes.json();
+
+    btn.textContent = "Saved!";
+    btn.style.color = "#22c55e";
+    addInfoMsg(`<strong>${filename}</strong> generated and indexed. Knowledge base now has ${upData.total_documents} documents.`);
+    setTimeout(() => { btn.textContent = "Save as Runbook"; btn.disabled = false; btn.style.color = "#4ade80"; }, 3000);
+  } catch (err) {
+    btn.textContent = "Failed";
+    btn.style.color = "#ef4444";
+    setTimeout(() => { btn.textContent = "Save as Runbook"; btn.disabled = false; btn.style.color = "#4ade80"; }, 3000);
+    addErrorMsg(`Failed to save runbook: ${err.message}`);
+  }
+});
+</script>
+</body>
+</html>

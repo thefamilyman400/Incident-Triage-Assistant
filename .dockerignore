@@ -1,0 +1,32 @@
+# Git
+.git
+.gitignore
+
+# Python cache
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.pyd
+.Python
+
+# Virtual environments
+.venv
+venv
+env
+
+# Environment secrets — injected at runtime, never baked into the image
+app/.env
+.env
+
+# Vector store — rebuilt at runtime or mounted as a volume
+app/vector_store/
+
+# Dev / docs artefacts
+demo/
+guides/
+*.pdf
+convert.py
+
+# Docker artefacts
+docker-compose.yml
+Dockerfile
