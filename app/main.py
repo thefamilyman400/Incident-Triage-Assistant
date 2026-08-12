@@ -34,6 +34,7 @@ DOCS_DIRS           = ["runbooks", "incidents", "docs"]
 CHUNK_SIZE          = 500
 CHUNK_OVERLAP       = 100
 TOP_K               = 6
+EMBED_BATCH_SIZE    = 16   # reduced from 32 to lower peak memory on 1GB instances
 
 # ── Initialise Gemini (primary) ─────────────────────────────────
 genai.configure(api_key=GOOGLE_API_KEY)
@@ -116,7 +117,7 @@ def build_index(base_dir: str = ".."):
 
     print(f"Building index for {len(all_chunks)} chunks...")
     texts = [c["text"] for c in all_chunks]
-    embeddings = embedder.encode(texts, show_progress_bar=True, batch_size=32)
+    embeddings = embedder.encode(texts, show_progress_bar=True, batch_size=EMBED_BATCH_SIZE)
     save_index(all_chunks, embeddings, doc_sources)
     print(f"Index built and saved to disk ({len(all_chunks)} chunks).")
     return all_chunks, embeddings
