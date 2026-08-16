@@ -4,6 +4,7 @@ services:
     image: triage-assistant:local
     ports:
       - "8080:8080"
+
     environment:
       # LLM keys
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
@@ -17,11 +18,7 @@ services:
       - SECRETS_MANAGER_ARN=${SECRETS_MANAGER_ARN:-}
 
     volumes:
-      # Persist vector index
       - vector_store:/app/app/vector_store
-
-      # AWS credentials configured on Lightsail host
-      - /home/ubuntu/.aws:/root/.aws:ro
 
     restart: unless-stopped
 
