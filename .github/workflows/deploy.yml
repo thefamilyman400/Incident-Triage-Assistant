@@ -10,30 +10,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check deployment secrets
-        env:
-          EC2_HOST: ${{ secrets.EC2_HOST }}
-          EC2_USER: ${{ secrets.EC2_USER }}
-          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
-        run: |
-          if [ -z "$EC2_HOST" ]; then
-            echo "❌ EC2_HOST is EMPTY"
-          else
-            echo "✅ EC2_HOST is present"
-          fi
-
-          if [ -z "$EC2_USER" ]; then
-            echo "❌ EC2_USER is EMPTY"
-          else
-            echo "✅ EC2_USER is present"
-          fi
-
-          if [ -z "$EC2_SSH_KEY" ]; then
-            echo "❌ EC2_SSH_KEY is EMPTY"
-          else
-            echo "✅ EC2_SSH_KEY is present"
-          fi
-
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.2.2
         with:
@@ -41,8 +17,32 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            set -e
+
             cd ~/Incident-Triage-Assistant
+
+            echo "Pulling latest code..."
             git pull origin main
+
+            echo "Building Docker image..."
             docker compose build
+
+            echo "Starting application..."
             docker compose up -d
+
+            echo "Waiting for application to start..."
+            for i in {1..30}; do
+              if curl -sf http://localhost:8080/health > /tmp/health.json; then
+                echo "Application is healthy!"
+                cat /tmp/health.json
+                exit 0
+              fi
+
+              echo "Health check attempt $i/30 failed. Waiting..."
+              sleep 2
+            done
+
+            echo "Application failed health check."
             docker compose ps
+            docker compose logs --tail=100
+            exit 1
