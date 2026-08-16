@@ -7,7 +7,9 @@
 **Last Updated:** 2025-06-01
 
 ---
+## Deployment
 
+Deployed automatically to EC2 using GitHub Actions.
 ## Table of Contents
 
 1. [Product Overview](#1-product-overview)
