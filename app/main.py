@@ -799,6 +799,17 @@ async def upload_document(file: UploadFile = File(...), folder: str = Form("runb
     }
 
 
+class EmbedRequest(BaseModel):
+    texts: List[str]
+
+
+@app.post("/embed")
+def embed(req: EmbedRequest):
+    """Shared embedding endpoint — lets FinPilot reuse the loaded model without loading its own."""
+    vecs = embedder.encode(req.texts, convert_to_numpy=True, show_progress_bar=False)
+    return {"embeddings": vecs.tolist()}
+
+
 @app.get("/documents")
 def list_documents():
     sources = {}
