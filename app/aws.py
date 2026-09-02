@@ -79,7 +79,7 @@ def get_api_keys() -> dict:
         "GOOGLE_API_KEY":      secrets.get("GOOGLE_API_KEY")      or os.getenv("GOOGLE_API_KEY", ""),
         "GOOGLE_GEMINI_MODEL": secrets.get("GOOGLE_GEMINI_MODEL") or os.getenv("GOOGLE_GEMINI_MODEL", "gemini-2.5-flash"),
         "GROQ_API_KEY":        secrets.get("GROQ_API_KEY")        or os.getenv("GROQ_API_KEY", ""),
-        "GROQ_MODEL":          secrets.get("GROQ_MODEL")          or os.getenv("GROQ_MODEL", "llama-3.1-8b-instant"),
+        "GROQ_MODEL":          secrets.get("GROQ_MODEL")          or os.getenv("GROQ_MODEL", "gpt-oss-120b"),
     }
 
 

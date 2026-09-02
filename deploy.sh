@@ -50,7 +50,7 @@ cat > "$APP_DIR/.env" <<'EOF'
 GOOGLE_API_KEY=your_gemini_api_key_here
 GOOGLE_GEMINI_MODEL=gemini-2.0-flash
 GROQ_API_KEY=
-GROQ_MODEL=llama-3.1-8b-instant
+GROQ_MODEL=gpt-oss-120b
 EOF
 chmod 600 "$APP_DIR/.env"
 echo "    --> Edit $APP_DIR/.env now with your API keys!"
