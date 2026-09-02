@@ -8,9 +8,9 @@ services:
     environment:
       # LLM keys
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
-      - GOOGLE_GEMINI_MODEL=${GOOGLE_GEMINI_MODEL:-gemini-2.5-flash}
+      - GOOGLE_GEMINI_MODEL=${GOOGLE_GEMINI_MODEL:-gemini-3.6-flash}
       - GROQ_API_KEY=${GROQ_API_KEY:-}
-      - GROQ_MODEL=${GROQ_MODEL:-gpt-oss-120b}
+      - GROQ_MODEL=${GROQ_MODEL:-openai/gpt-oss-120b}
 
       # AWS
       - AWS_REGION=${AWS_REGION:-ap-south-1}

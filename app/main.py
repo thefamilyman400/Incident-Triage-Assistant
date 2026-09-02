@@ -27,7 +27,7 @@ load_dotenv()
 # ── Config — prefer Secrets Manager, fall back to .env / env vars ──
 _keys = get_api_keys()
 GOOGLE_API_KEY      = _keys["GOOGLE_API_KEY"]
-GOOGLE_GEMINI_MODEL = _keys["GOOGLE_GEMINI_MODEL"] or "gemini-2.5-flash"
+GOOGLE_GEMINI_MODEL = _keys["GOOGLE_GEMINI_MODEL"] or "gemini-3.6-flash"
 GROQ_API_KEY        = _keys["GROQ_API_KEY"]
 GROQ_MODEL          = _keys["GROQ_MODEL"]
 DOCS_DIRS           = ["runbooks", "incidents", "docs"]
