@@ -26,10 +26,12 @@ phases:
       - 'echo "Pushing Docker image..."'
       - 'docker push $ECR_URI:$CODEBUILD_BUILD_NUMBER'
       - 'docker push $ECR_URI:latest'
+      - 'echo "ECR_IMAGE=$ECR_URI:$CODEBUILD_BUILD_NUMBER" > image-definition.env'
       - 'echo "Docker image pushed successfully."'
 
 artifacts:
   files:
     - appspec.yml
     - docker-compose.yml
+    - image-definition.env
     - scripts/codedeploy/**/*

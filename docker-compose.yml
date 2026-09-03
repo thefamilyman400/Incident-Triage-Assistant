@@ -1,7 +1,7 @@
 services:
   triage-assistant:
     build: .
-    image: triage-assistant:local
+    image: ${ECR_IMAGE:-913524927483.dkr.ecr.ap-south-1.amazonaws.com/incident-triage-assistant:latest}
     ports:
       - "8080:8080"
 
