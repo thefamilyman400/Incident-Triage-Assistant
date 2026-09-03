@@ -19,13 +19,11 @@ phases:
       - 'echo "Build started on $(date)"'
       - 'echo "Building Docker image..."'
       - 'docker build -t $ECR_URI:$CODEBUILD_BUILD_NUMBER .'
-      - 'docker tag $ECR_URI:$CODEBUILD_BUILD_NUMBER $ECR_URI:latest'
 
   post_build:
     commands:
       - 'echo "Pushing Docker image..."'
       - 'docker push $ECR_URI:$CODEBUILD_BUILD_NUMBER'
-      - 'docker push $ECR_URI:latest'
       - 'echo "ECR_IMAGE=$ECR_URI:$CODEBUILD_BUILD_NUMBER" > image-definition.env'
       - 'echo "Docker image pushed successfully."'
 
