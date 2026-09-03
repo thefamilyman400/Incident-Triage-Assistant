@@ -1,0 +1,36 @@
+version: 0.2
+
+env:
+  variables:
+    AWS_REGION: "ap-south-1"
+    ECR_REPOSITORY: "incident-triage-assistant"
+
+phases:
+
+  pre_build:
+    commands:
+      - echo "Logging in to Amazon ECR..."
+      - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+      - ECR_URI=${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}
+      - aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_URI}
+      - echo "ECR URI: ${ECR_URI}"
+
+  build:
+    commands:
+      - echo "Build started on $(date)"
+      - echo "Building Docker image..."
+      - docker build -t ${ECR_URI}:${CODEBUILD_BUILD_NUMBER} .
+      - docker tag ${ECR_URI}:${CODEBUILD_BUILD_NUMBER} ${ECR_URI}:latest
+
+  post_build:
+    commands:
+      - echo "Pushing Docker image..."
+      - docker push ${ECR_URI}:${CODEBUILD_BUILD_NUMBER}
+      - docker push ${ECR_URI}:latest
+      - echo "Docker image pushed successfully."
+
+artifacts:
+  files:
+    - appspec.yml
+    - docker-compose.yml
+    - scripts/codedeploy/**/*
