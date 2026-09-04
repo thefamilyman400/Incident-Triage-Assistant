@@ -7,14 +7,13 @@ files:
     destination: /opt/triage-assistant
 
 hooks:
-
   ApplicationStop:
     - location: scripts/codedeploy/stop.sh
       timeout: 60
       runas: root
 
   AfterInstall:
-    - location: scripts/codedeploy/deploy.sh
+    - location: scripts/codedeploy/start.sh
       timeout: 300
       runas: root
 
